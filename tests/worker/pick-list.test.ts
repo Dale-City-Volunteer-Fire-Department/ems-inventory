@@ -1,7 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { StatefulD1Mock, makeTemplateItem } from '../helpers/mocks';
 import { submitInventory } from '../../src/worker/lib/db';
-import type { Category } from '../../src/shared/types';
 import { CATEGORIES, CATEGORY_SORT } from '../../src/shared/categories';
 
 // ── Pick list format (extracted from db.ts formatPickList logic) ─────
@@ -139,10 +138,10 @@ describe('Pick List Generation', () => {
       mock.onQuery('INSERT INTO inventory_history', () => []);
 
       // Capture the pick list passed to the orders insert
-      let capturedPickList = '';
+      let _capturedPickList = '';
       mock.onQuery('INSERT INTO orders', (binds) => {
         // binds: [sessionId, stationId, itemsShort, pickList, 'pending']
-        capturedPickList = binds[3] as string;
+        _capturedPickList = binds[3] as string;
         return [];
       });
 
@@ -158,9 +157,7 @@ describe('Pick List Generation', () => {
     });
 
     it('generates no order when no items are short', async () => {
-      const items = [
-        makeTemplateItem({ item_id: 1, item_name: 'NPA Kit', category: 'Airway', target_count: 4 }),
-      ];
+      const items = [makeTemplateItem({ item_id: 1, item_name: 'NPA Kit', category: 'Airway', target_count: 4 })];
 
       const mock = new StatefulD1Mock();
       mock.onQuery('SELECT name FROM stations WHERE id', () => [{ name: 'Station 10' }]);

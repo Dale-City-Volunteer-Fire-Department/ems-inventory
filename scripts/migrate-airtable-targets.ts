@@ -66,6 +66,8 @@ function parseTargetId(targetId: string): { itemName: string; stationName: strin
   let itemName = match[1].trim();
   // Strip surrounding quotes
   itemName = itemName.replace(/^"+/, '').replace(/"+$/, '');
+  // Collapse doubled/tripled quotes to single (Airtable artifact: 9/32"" → 9/32")
+  itemName = itemName.replace(/""+/g, '"');
   // Normalize whitespace
   itemName = itemName.replace(/\s+/g, ' ').trim();
 
