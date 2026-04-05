@@ -107,7 +107,12 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
 
   // ── Static / fallback ─────────────────────────────────────────────
   if (!path.startsWith('/api/')) {
-    return new Response('EMS Inventory — Coming Soon', { status: 200 });
+    // Serve static assets; fall back to index.html for SPA client-side routing
+    const assetResponse = await env.ASSETS.fetch(request);
+    if (assetResponse.status !== 404) return assetResponse;
+    // Serve index.html for any unmatched path (SPA routing)
+    const spaUrl = new URL('/', request.url);
+    return env.ASSETS.fetch(new Request(spaUrl, request));
   }
 
   return notFound('Route not found');

@@ -1,6 +1,7 @@
 export interface Env {
   DB: D1Database;
   SESSIONS: KVNamespace;
+  ASSETS: Fetcher;
   APP_NAME: string;
   ORG_NAME: string;
   AZURE_AD_CLIENT_ID: string;

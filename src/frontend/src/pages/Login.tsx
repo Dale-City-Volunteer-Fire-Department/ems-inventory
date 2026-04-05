@@ -15,17 +15,17 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center bg-neutral-900 text-white p-6">
+    <div className="min-h-dvh flex flex-col items-center justify-center bg-neutral-950 text-white p-6">
       <div className="w-full max-w-sm flex flex-col items-center">
-        <div className="mb-2 text-4xl">🚑</div>
-        <h1 className="text-2xl font-bold mb-1">EMS Inventory</h1>
+        <img src="/dcvfd-logo.svg" alt="DCVFD" className="h-20 w-auto mb-4" />
+        <h1 className="text-2xl font-bold mb-1">DCVFD EMS Inventory</h1>
         <p className="text-neutral-400 text-sm mb-10">Dale City Volunteer Fire Department</p>
 
         <div className="w-full space-y-3">
           <button
             type="button"
             onClick={handleEntraId}
-            className="flex w-full items-center justify-center gap-3 rounded-lg bg-blue-600 px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-blue-700 active:bg-blue-800 min-h-[48px]"
+            className="flex w-full items-center justify-center gap-3 rounded-lg bg-dcvfd px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-dcvfd-light active:bg-dcvfd-dark min-h-[48px]"
           >
             <svg width="20" height="20" viewBox="0 0 21 21" fill="none">
               <rect x="1" y="1" width="9" height="9" fill="#F25022" />

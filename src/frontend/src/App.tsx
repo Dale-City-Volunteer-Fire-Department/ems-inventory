@@ -1,22 +1,36 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useCallback } from 'react';
-import type { Station, UserRole } from '@shared/types';
+import type { Station } from '@shared/types';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 import { useStations } from './hooks/useStations';
 import Login from './pages/Login';
 import StationSelect from './pages/StationSelect';
 import InventoryForm from './pages/InventoryForm';
 import LogisticsDashboard from './pages/LogisticsDashboard';
 import AdminPanel from './pages/AdminPanel';
-import NavBar from './components/NavBar';
+import Layout from './components/Layout';
 import './index.css';
+
+const ROLE_RANK = { crew: 0, logistics: 1, admin: 2 } as const;
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-dvh flex items-center justify-center bg-neutral-950 text-white">
+      <div className="text-center">
+        <img src="/dcvfd-logo.svg" alt="DCVFD" className="h-16 w-auto mx-auto mb-4" />
+        <p className="text-neutral-400">Loading...</p>
+      </div>
+    </div>
+  );
+}
 
 function AppShell() {
   const { selectedStation, selectStation, clearStation } = useStations();
+  const { user } = useAuth();
   const [station, setStation] = useState<Station | null>(selectedStation);
 
-  // TODO: replace with real auth once built
-  const [role] = useState<UserRole>('admin');
-  const [isAuthenticated] = useState(true);
+  const role = user!.role;
+  const userRank = ROLE_RANK[role];
 
   const handleSelectStation = useCallback(
     (s: Station) => {
@@ -31,12 +45,8 @@ function AppShell() {
     setStation(null);
   }, [clearStation]);
 
-  if (!isAuthenticated) {
-    return <Login />;
-  }
-
   return (
-    <div className="min-h-dvh bg-neutral-900">
+    <Layout role={role} userName={user!.name}>
       <Routes>
         <Route
           path="/inventory"
@@ -48,20 +58,39 @@ function AppShell() {
             )
           }
         />
-        <Route path="/dashboard" element={<LogisticsDashboard />} />
-        <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/login" element={<Login />} />
+        {userRank >= ROLE_RANK.logistics && (
+          <Route path="/dashboard" element={<LogisticsDashboard />} />
+        )}
+        {userRank >= ROLE_RANK.admin && (
+          <Route path="/admin" element={<AdminPanel />} />
+        )}
+        <Route path="/login" element={<Navigate to="/inventory" replace />} />
         <Route path="*" element={<Navigate to="/inventory" replace />} />
       </Routes>
-      <NavBar role={role} />
-    </div>
+    </Layout>
   );
+}
+
+function AuthGate() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  return <AppShell />;
 }
 
 export default function App() {
   return (
     <BrowserRouter>
-      <AppShell />
+      <AuthProvider>
+        <AuthGate />
+      </AuthProvider>
     </BrowserRouter>
   );
 }

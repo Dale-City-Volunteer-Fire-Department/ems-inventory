@@ -4,6 +4,10 @@
   --color-ems-red: #dc2626;
   --color-ems-green: #16a34a;
   --color-ems-amber: #d97706;
+  --color-dcvfd: #163832;
+  --color-dcvfd-light: #1e4d44;
+  --color-dcvfd-dark: #0f2924;
+  --color-dcvfd-accent: #2a7a6c;
 }
 
 /* Force numeric keypad on iOS Safari */

@@ -28,5 +28,6 @@ id = "37a2d67b1b564b548c882fca5140f3d9"
 # Static frontend assets — Worker serves the SPA for non-API paths.
 # Build the frontend first: npm run build (runs vite build in src/frontend).
 [assets]
-directory = "./src/frontend/dist"
+directory = "./dist"
 binding = "ASSETS"
+not_found_handling = "single-page-application"

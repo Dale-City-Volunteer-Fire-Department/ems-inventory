@@ -45,8 +45,8 @@ export default function InventoryForm({ station, onChangeStation }: InventoryFor
   // Success screen
   if (submitResult) {
     return (
-      <div className="min-h-dvh flex flex-col items-center justify-center bg-neutral-900 text-white p-6">
-        <div className="text-5xl mb-4">&#10003;</div>
+      <div className="min-h-dvh flex flex-col items-center justify-center bg-neutral-950 text-white p-6">
+        <div className="text-5xl mb-4 text-dcvfd-accent">&#10003;</div>
         <h1 className="text-2xl font-bold mb-2">Inventory Submitted</h1>
         <p className="text-neutral-400 mb-6">{station.name}</p>
         <div className="bg-neutral-800 rounded-xl p-4 w-full max-w-sm space-y-2 text-sm">
@@ -68,7 +68,7 @@ export default function InventoryForm({ station, onChangeStation }: InventoryFor
         <button
           type="button"
           onClick={onChangeStation}
-          className="mt-8 rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white hover:bg-blue-700 active:bg-blue-800 min-h-[48px]"
+          className="mt-8 rounded-lg bg-dcvfd px-8 py-3 font-semibold text-white hover:bg-dcvfd-light active:bg-dcvfd-dark min-h-[48px]"
         >
           Done
         </button>
@@ -78,9 +78,9 @@ export default function InventoryForm({ station, onChangeStation }: InventoryFor
 
   if (loading) {
     return (
-      <div className="min-h-dvh flex items-center justify-center bg-neutral-900 text-white">
+      <div className="min-h-dvh flex items-center justify-center bg-neutral-950 text-white">
         <div className="text-center">
-          <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4" />
+          <div className="animate-spin h-8 w-8 border-2 border-dcvfd-accent border-t-transparent rounded-full mx-auto mb-4" />
           <p className="text-neutral-400">Loading inventory...</p>
         </div>
       </div>
@@ -88,9 +88,9 @@ export default function InventoryForm({ station, onChangeStation }: InventoryFor
   }
 
   return (
-    <div className="min-h-dvh bg-neutral-900 text-white pb-24">
+    <div className="min-h-dvh bg-neutral-950 text-white pb-24 md:pb-6">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-neutral-900/95 backdrop-blur-sm border-b border-neutral-800 px-4 py-3">
+      <div className="sticky top-0 z-20 bg-neutral-950/95 backdrop-blur-sm border-b border-neutral-800 px-4 py-3">
         <div className="flex items-center justify-between mb-2">
           <div>
             <h1 className="text-lg font-bold">{station.name}</h1>
@@ -114,7 +114,7 @@ export default function InventoryForm({ station, onChangeStation }: InventoryFor
       )}
 
       {/* Category groups */}
-      <div className="px-3 pt-3">
+      <div className="px-3 pt-3 md:max-w-4xl md:mx-auto md:grid md:grid-cols-2 md:gap-4">
         {Object.entries(itemsByCategory).map(([category, items]) => {
           const enteredCount = items.filter(
             (i) => counts[i.item_id] !== null && counts[i.item_id] !== undefined,

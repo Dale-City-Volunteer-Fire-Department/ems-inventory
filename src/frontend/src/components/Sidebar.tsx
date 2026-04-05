@@ -20,12 +20,13 @@ const ROLE_RANK: Record<UserRole, number> = {
   admin: 2,
 };
 
-interface NavBarProps {
+interface SidebarProps {
   role: UserRole;
+  userName?: string;
 }
 
-function NavIcon({ icon, active }: { icon: string; active: boolean }) {
-  const cls = `h-6 w-6 ${active ? 'text-dcvfd-accent' : 'text-neutral-500'}`;
+function SidebarIcon({ icon, active }: { icon: string; active: boolean }) {
+  const cls = `h-5 w-5 ${active ? 'text-white' : 'text-neutral-300'}`;
   switch (icon) {
     case 'clipboard':
       return (
@@ -66,7 +67,7 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
   }
 }
 
-export default function NavBar({ role }: NavBarProps) {
+export default function Sidebar({ role, userName }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const userRank = ROLE_RANK[role];
@@ -77,8 +78,18 @@ export default function NavBar({ role }: NavBarProps) {
   });
 
   return (
-    <nav className="no-print fixed bottom-0 left-0 right-0 z-40 border-t border-neutral-800 bg-neutral-900/95 backdrop-blur-sm safe-area-pb md:hidden">
-      <div className="flex justify-around py-2">
+    <aside className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 bg-dcvfd z-30">
+      {/* Logo + App Name */}
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-dcvfd-light">
+        <img src="/dcvfd-logo.svg" alt="DCVFD" className="h-10 w-auto" />
+        <div>
+          <div className="text-sm font-bold text-white leading-tight">DCVFD</div>
+          <div className="text-xs text-dcvfd-accent leading-tight">EMS Inventory</div>
+        </div>
+      </div>
+
+      {/* Nav Links */}
+      <nav className="flex-1 px-3 py-4 space-y-1">
         {visibleItems.map((item) => {
           const active = location.pathname.startsWith(item.path);
           return (
@@ -86,18 +97,24 @@ export default function NavBar({ role }: NavBarProps) {
               key={item.path}
               type="button"
               onClick={() => navigate(item.path)}
-              className={`flex min-w-[64px] flex-col items-center gap-0.5 px-3 py-1 ${
-                active ? 'border-t-2 border-dcvfd-accent -mt-[2px]' : ''
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                active
+                  ? 'bg-dcvfd-light text-white'
+                  : 'text-neutral-300 hover:bg-dcvfd-light/50 hover:text-white'
               }`}
             >
-              <NavIcon icon={item.icon} active={active} />
-              <span className={`text-xs ${active ? 'text-dcvfd-accent font-medium' : 'text-neutral-500'}`}>
-                {item.label}
-              </span>
+              <SidebarIcon icon={item.icon} active={active} />
+              {item.label}
             </button>
           );
         })}
+      </nav>
+
+      {/* User info at bottom */}
+      <div className="px-4 py-4 border-t border-dcvfd-light">
+        <div className="text-sm text-white font-medium truncate">{userName ?? 'User'}</div>
+        <div className="text-xs text-dcvfd-accent capitalize">{role}</div>
       </div>
-    </nav>
+    </aside>
   );
 }
