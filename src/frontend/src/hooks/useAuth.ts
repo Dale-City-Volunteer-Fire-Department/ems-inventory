@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!cancelled) setUser(null);
           return;
         }
-        const data = await res.json();
+        const data = (await res.json()) as { user?: { role: UserRole; name: string; email: string; stationId?: number } };
         if (!cancelled && data.user) {
           setUser({
             role: data.user.role,
