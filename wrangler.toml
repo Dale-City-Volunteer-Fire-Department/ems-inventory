@@ -1,0 +1,32 @@
+name = "ems-inventory"
+main = "src/worker/index.ts"
+compatibility_date = "2026-04-03"
+
+# Environment variables (non-secret)
+[vars]
+APP_NAME = "EMS Inventory"
+ORG_NAME = "Dale City Volunteer Fire Department"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "ems-inventory-db"
+database_id = "PLACEHOLDER-run-wrangler-d1-create"
+migrations_dir = "migrations"
+
+# KV Namespace (sessions)
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "PLACEHOLDER-run-wrangler-kv-create"
+
+# Secrets stored via `wrangler secret put` or Cloudflare Dashboard:
+#   wrangler secret put AZURE_AD_CLIENT_ID
+#   wrangler secret put AZURE_AD_TENANT_ID
+#   wrangler secret put STATION_PIN
+#   wrangler secret put MAGIC_LINK_SECRET
+
+# Static frontend assets — Worker serves the SPA for non-API paths.
+# Build the frontend first: npm run build (runs vite build in src/frontend).
+[assets]
+directory = "./src/frontend/dist"
+binding = "ASSETS"
