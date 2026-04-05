@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { createMockKV, createMockEnv } from '../helpers/mocks';
-import { createSession, getSession, destroySession, parseSessionCookie, buildSessionCookie, buildClearSessionCookie } from '../../src/worker/auth/session';
+import {
+  createSession,
+  getSession,
+  destroySession,
+  parseSessionCookie,
+  buildSessionCookie,
+  buildClearSessionCookie,
+} from '../../src/worker/auth/session';
 import type { UserRole } from '../../src/shared/types';
 
 // ── Tests ────────────────────────────────────────────────────────────
