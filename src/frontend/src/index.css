@@ -1,0 +1,32 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ems-red: #dc2626;
+  --color-ems-green: #16a34a;
+  --color-ems-amber: #d97706;
+}
+
+/* Force numeric keypad on iOS Safari */
+input[inputmode='numeric'] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Print styles for pick lists */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+}
+
+.print-only {
+  display: none;
+}

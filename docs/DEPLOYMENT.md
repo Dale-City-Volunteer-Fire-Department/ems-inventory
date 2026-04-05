@@ -1,6 +1,7 @@
 # EMS Inventory — Deployment
 
 ## Prerequisites
+
 - Cloudflare account with Workers, D1, and KV enabled
 - `wrangler` CLI authenticated (`wrangler login`)
 - D1 database created (`wrangler d1 create ems-inventory-db`)
@@ -22,9 +23,11 @@
    ```
 
 ## Deploy
+
 ```bash
 npm run deploy
 ```
 
 ## Custom Domain
+
 Configure via Cloudflare Dashboard: Workers > ems-inventory > Triggers > Custom Domains.

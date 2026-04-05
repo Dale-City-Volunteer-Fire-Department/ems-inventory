@@ -49,16 +49,16 @@ and `AZURE_SQL_DATABASE` environment variables.
 
 ## Tables Synced
 
-| Table | Incremental Column |
-|-------|-------------------|
-| items | updated_at |
-| stations | full sync |
-| stock_targets | updated_at |
-| inventory_sessions | submitted_at |
-| inventory_history | full sync |
-| orders | created_at |
-| users | created_at |
-| config | updated_at |
+| Table              | Incremental Column |
+| ------------------ | ------------------ |
+| items              | updated_at         |
+| stations           | full sync          |
+| stock_targets      | updated_at         |
+| inventory_sessions | submitted_at       |
+| inventory_history  | full sync          |
+| orders             | created_at         |
+| users              | created_at         |
+| config             | updated_at         |
 
 ## PowerBI Connection
 

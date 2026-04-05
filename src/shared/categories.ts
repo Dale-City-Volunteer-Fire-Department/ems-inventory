@@ -12,12 +12,12 @@ export const CATEGORIES: Category[] = [
 ];
 
 export const CATEGORY_SORT: Record<Category, number> = {
-  'Airway': 1,
-  'Breathing': 2,
-  'Circulation': 3,
-  'Medications': 4,
-  'Splinting': 5,
-  'Burn': 6,
+  Airway: 1,
+  Breathing: 2,
+  Circulation: 3,
+  Medications: 4,
+  Splinting: 5,
+  Burn: 6,
   'OB/Peds': 7,
-  'Misc': 8,
+  Misc: 8,
 };

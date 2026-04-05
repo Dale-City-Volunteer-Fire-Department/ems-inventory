@@ -13,8 +13,8 @@
  *   CF_ACCOUNT_ID, CF_API_TOKEN, CF_D1_DATABASE_ID
  */
 
-import sql from "mssql";
-import { execSync } from "child_process";
+import sql from 'mssql';
+import { execSync } from 'child_process';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -38,97 +38,72 @@ interface D1QueryResult {
 
 const TABLES: SyncTableConfig[] = [
   {
-    name: "stations",
-    timestampColumn: "_full", // no timestamp — always full sync
-    columns: ["id", "name", "code", "is_active"],
-    mergeKeyColumns: ["id"],
+    name: 'stations',
+    timestampColumn: '_full', // no timestamp — always full sync
+    columns: ['id', 'name', 'code', 'is_active'],
+    mergeKeyColumns: ['id'],
   },
   {
-    name: "items",
-    timestampColumn: "updated_at",
+    name: 'items',
+    timestampColumn: 'updated_at',
+    columns: ['id', 'name', 'category', 'sort_order', 'is_active', 'created_at', 'updated_at'],
+    mergeKeyColumns: ['id'],
+  },
+  {
+    name: 'stock_targets',
+    timestampColumn: 'updated_at',
+    columns: ['id', 'item_id', 'station_id', 'target_count', 'updated_at'],
+    mergeKeyColumns: ['id'],
+  },
+  {
+    name: 'inventory_sessions',
+    timestampColumn: 'submitted_at',
+    columns: ['id', 'station_id', 'submitted_by', 'submitted_at', 'item_count', 'items_short'],
+    mergeKeyColumns: ['id'],
+  },
+  {
+    name: 'inventory_history',
+    timestampColumn: '_full', // no timestamp — sync by session
     columns: [
-      "id",
-      "name",
-      "category",
-      "sort_order",
-      "is_active",
-      "created_at",
-      "updated_at",
+      'id',
+      'session_id',
+      'item_name',
+      'category',
+      'station_name',
+      'target_count',
+      'actual_count',
+      'delta',
+      'status',
     ],
-    mergeKeyColumns: ["id"],
+    mergeKeyColumns: ['id'],
   },
   {
-    name: "stock_targets",
-    timestampColumn: "updated_at",
-    columns: ["id", "item_id", "station_id", "target_count", "updated_at"],
-    mergeKeyColumns: ["id"],
-  },
-  {
-    name: "inventory_sessions",
-    timestampColumn: "submitted_at",
+    name: 'orders',
+    timestampColumn: 'created_at',
     columns: [
-      "id",
-      "station_id",
-      "submitted_by",
-      "submitted_at",
-      "item_count",
-      "items_short",
+      'id',
+      'session_id',
+      'station_id',
+      'items_short',
+      'pick_list',
+      'status',
+      'created_at',
+      'filled_at',
+      'filled_by',
     ],
-    mergeKeyColumns: ["id"],
+    mergeKeyColumns: ['id'],
   },
   {
-    name: "inventory_history",
-    timestampColumn: "_full", // no timestamp — sync by session
-    columns: [
-      "id",
-      "session_id",
-      "item_name",
-      "category",
-      "station_name",
-      "target_count",
-      "actual_count",
-      "delta",
-      "status",
-    ],
-    mergeKeyColumns: ["id"],
+    name: 'users',
+    timestampColumn: 'created_at',
+    columns: ['id', 'email', 'name', 'role', 'auth_method', 'station_id', 'is_active', 'created_at', 'last_login_at'],
+    mergeKeyColumns: ['id'],
   },
   {
-    name: "orders",
-    timestampColumn: "created_at",
-    columns: [
-      "id",
-      "session_id",
-      "station_id",
-      "items_short",
-      "pick_list",
-      "status",
-      "created_at",
-      "filled_at",
-      "filled_by",
-    ],
-    mergeKeyColumns: ["id"],
-  },
-  {
-    name: "users",
-    timestampColumn: "created_at",
-    columns: [
-      "id",
-      "email",
-      "name",
-      "role",
-      "auth_method",
-      "station_id",
-      "is_active",
-      "created_at",
-      "last_login_at",
-    ],
-    mergeKeyColumns: ["id"],
-  },
-  {
-    name: "config",
-    timestampColumn: "updated_at",
-    columns: ["key", "value", "updated_at"],
-    mergeKeyColumns: ["key"],
+    name: 'config',
+    timestampColumn: 'updated_at',
+    columns: ['key', 'value', 'updated_at'],
+    mergeKeyColumns: ['key'],
   },
 ];
 
@@ -141,21 +116,21 @@ function getAzureSqlConfig(): sql.config {
   let server = process.env.AZURE_SQL_SERVER;
   let user = process.env.AZURE_SQL_USER;
   let password = process.env.AZURE_SQL_PASSWORD;
-  let database = process.env.AZURE_SQL_DATABASE || "ems_inventory";
+  let database = process.env.AZURE_SQL_DATABASE || 'ems_inventory';
 
   if (!server || !user || !password) {
-    console.log("  Reading Azure SQL creds from Vault...");
-    const vaultAddr = process.env.VAULT_ADDR || "http://127.0.0.1:8200";
-    const vaultToken = process.env.VAULT_TOKEN || "dcvfd-dev-root";
+    console.log('  Reading Azure SQL creds from Vault...');
+    const vaultAddr = process.env.VAULT_ADDR || 'http://127.0.0.1:8200';
+    const vaultToken = process.env.VAULT_TOKEN || 'dcvfd-dev-root';
     const raw = execSync(
       `VAULT_ADDR=${vaultAddr} VAULT_TOKEN=${vaultToken} vault kv get -format=json secret/ems-inventory/azure-sql`,
-      { encoding: "utf-8" },
+      { encoding: 'utf-8' },
     );
     const vaultData = JSON.parse(raw).data.data;
     server = vaultData.server;
     user = vaultData.username;
     password = vaultData.password;
-    database = database || "ems_inventory";
+    database = database || 'ems_inventory';
   }
 
   return {
@@ -182,18 +157,16 @@ async function queryD1(query: string): Promise<D1QueryResult> {
   const databaseId = process.env.CF_D1_DATABASE_ID;
 
   if (!accountId || !apiToken || !databaseId) {
-    throw new Error(
-      "Missing Cloudflare env vars: CF_ACCOUNT_ID, CF_API_TOKEN, CF_D1_DATABASE_ID",
-    );
+    throw new Error('Missing Cloudflare env vars: CF_ACCOUNT_ID, CF_API_TOKEN, CF_D1_DATABASE_ID');
   }
 
   const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/query`;
 
   const resp = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${apiToken}`,
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({ sql: query }),
   });
@@ -215,33 +188,24 @@ async function queryD1(query: string): Promise<D1QueryResult> {
 // Azure SQL helpers
 // ---------------------------------------------------------------------------
 
-async function getLastSyncTime(
-  pool: sql.ConnectionPool,
-  tableName: string,
-): Promise<string> {
+async function getLastSyncTime(pool: sql.ConnectionPool, tableName: string): Promise<string> {
   const result = await pool
     .request()
-    .input("table_name", sql.NVarChar, tableName)
-    .query(
-      "SELECT last_synced_at FROM sync_metadata WHERE table_name = @table_name",
-    );
+    .input('table_name', sql.NVarChar, tableName)
+    .query('SELECT last_synced_at FROM sync_metadata WHERE table_name = @table_name');
 
   if (result.recordset.length === 0) {
-    return "1970-01-01T00:00:00";
+    return '1970-01-01T00:00:00';
   }
   const dt: Date = result.recordset[0].last_synced_at;
-  return dt.toISOString().replace("Z", "");
+  return dt.toISOString().replace('Z', '');
 }
 
-async function updateSyncMetadata(
-  pool: sql.ConnectionPool,
-  tableName: string,
-  rowCount: number,
-): Promise<void> {
+async function updateSyncMetadata(pool: sql.ConnectionPool, tableName: string, rowCount: number): Promise<void> {
   await pool
     .request()
-    .input("table_name", sql.NVarChar, tableName)
-    .input("rows_synced", sql.Int, rowCount)
+    .input('table_name', sql.NVarChar, tableName)
+    .input('rows_synced', sql.Int, rowCount)
     .query(
       `UPDATE sync_metadata
        SET last_synced_at = SYSUTCDATETIME(),
@@ -254,11 +218,8 @@ async function updateSyncMetadata(
 /**
  * Build a T-SQL MERGE statement for upsert.
  */
-function buildMergeSQL(
-  table: SyncTableConfig,
-  rows: Record<string, unknown>[],
-): string {
-  if (rows.length === 0) return "";
+function buildMergeSQL(table: SyncTableConfig, rows: Record<string, unknown>[]): string {
+  if (rows.length === 0) return '';
 
   const cols = table.columns;
 
@@ -266,27 +227,25 @@ function buildMergeSQL(
   const valueRows = rows.map((row) => {
     const vals = cols.map((col) => {
       const v = row[col];
-      if (v === null || v === undefined) return "NULL";
-      if (typeof v === "number") return String(v);
+      if (v === null || v === undefined) return 'NULL';
+      if (typeof v === 'number') return String(v);
       // Escape single quotes
       return `N'${String(v).replace(/'/g, "''")}'`;
     });
-    return `(${vals.join(", ")})`;
+    return `(${vals.join(', ')})`;
   });
 
-  const colList = cols.map((c) => `[${c}]`).join(", ");
-  const sourceColList = cols.map((c) => `src.[${c}]`).join(", ");
-  const matchCondition = table.mergeKeyColumns
-    .map((k) => `tgt.[${k}] = src.[${k}]`)
-    .join(" AND ");
+  const colList = cols.map((c) => `[${c}]`).join(', ');
+  const sourceColList = cols.map((c) => `src.[${c}]`).join(', ');
+  const matchCondition = table.mergeKeyColumns.map((k) => `tgt.[${k}] = src.[${k}]`).join(' AND ');
   const updateSet = cols
     .filter((c) => !table.mergeKeyColumns.includes(c))
     .map((c) => `tgt.[${c}] = src.[${c}]`)
-    .join(", ");
+    .join(', ');
 
   return `
     MERGE [${table.name}] AS tgt
-    USING (VALUES ${valueRows.join(",\n           ")}) AS src (${colList})
+    USING (VALUES ${valueRows.join(',\n           ')}) AS src (${colList})
     ON ${matchCondition}
     WHEN MATCHED THEN UPDATE SET ${updateSet}
     WHEN NOT MATCHED THEN INSERT (${colList}) VALUES (${sourceColList});
@@ -297,10 +256,7 @@ function buildMergeSQL(
 // Sync one table
 // ---------------------------------------------------------------------------
 
-async function syncTable(
-  pool: sql.ConnectionPool,
-  table: SyncTableConfig,
-): Promise<number> {
+async function syncTable(pool: sql.ConnectionPool, table: SyncTableConfig): Promise<number> {
   console.log(`\n--- Syncing: ${table.name} ---`);
 
   const lastSync = await getLastSyncTime(pool, table.name);
@@ -308,11 +264,11 @@ async function syncTable(
 
   // Build D1 query
   let d1Query: string;
-  if (table.timestampColumn === "_full") {
+  if (table.timestampColumn === '_full') {
     // Full sync — no timestamp filter
-    d1Query = `SELECT ${table.columns.join(", ")} FROM ${table.name}`;
+    d1Query = `SELECT ${table.columns.join(', ')} FROM ${table.name}`;
   } else {
-    d1Query = `SELECT ${table.columns.join(", ")} FROM ${table.name} WHERE ${table.timestampColumn} > '${lastSync}'`;
+    d1Query = `SELECT ${table.columns.join(', ')} FROM ${table.name} WHERE ${table.timestampColumn} > '${lastSync}'`;
   }
 
   console.log(`  D1 query: ${d1Query}`);
@@ -321,7 +277,7 @@ async function syncTable(
   console.log(`  Rows fetched from D1: ${rows.length}`);
 
   if (rows.length === 0) {
-    console.log("  Nothing to sync.");
+    console.log('  Nothing to sync.');
     return 0;
   }
 
@@ -335,9 +291,7 @@ async function syncTable(
     if (mergeSQL) {
       await pool.request().query(mergeSQL);
       totalMerged += batch.length;
-      console.log(
-        `  Merged batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} rows`,
-      );
+      console.log(`  Merged batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} rows`);
     }
   }
 
@@ -351,14 +305,14 @@ async function syncTable(
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  console.log("=== D1 → Azure SQL Sync ===");
+  console.log('=== D1 → Azure SQL Sync ===');
   console.log(`Started: ${new Date().toISOString()}`);
 
   const config = getAzureSqlConfig();
   console.log(`\nConnecting to ${config.server}/${config.database}...`);
 
   const pool = await sql.connect(config);
-  console.log("Connected.");
+  console.log('Connected.');
 
   let totalRows = 0;
   const errors: string[] = [];
@@ -376,7 +330,7 @@ async function main(): Promise<void> {
 
   await pool.close();
 
-  console.log("\n=== Sync Complete ===");
+  console.log('\n=== Sync Complete ===');
   console.log(`Total rows synced: ${totalRows}`);
   if (errors.length > 0) {
     console.error(`Errors (${errors.length}):`);
@@ -388,6 +342,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error("Fatal error:", err);
+  console.error('Fatal error:', err);
   process.exit(1);
 });

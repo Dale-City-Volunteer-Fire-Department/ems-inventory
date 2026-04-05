@@ -7,6 +7,10 @@ import { handleGetOrders, handleUpdateOrder } from './orders';
 import { handleGetTargets, handleUpdateTarget } from './stock-targets';
 import { getHistory } from './lib/db';
 import { ok, notFound, serverError } from './lib/response';
+import { handleEntraLogin, handleEntraCallback } from './auth/entra';
+import { handleMagicLinkRequest, handleMagicLinkVerify } from './auth/magic-link';
+import { handlePinAuth } from './auth/pin';
+import { handleAuthMe, handleAuthLogout } from './auth/handlers';
 
 export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
@@ -31,11 +35,30 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
   }
 
   // ── Auth routes ───────────────────────────────────────────────────
-  // TODO: Auth middleware will go here — Entra ID SSO, Magic Link, Station PIN
-  // For now, all API routes are open. Auth is a separate task.
-  if (path.startsWith('/api/auth/')) {
-    // TODO: Implement auth handlers (login, callback, logout, me)
-    return notFound('Auth not yet implemented');
+  // Entra ID SSO
+  if (path === '/api/auth/entra/login' && method === 'GET') {
+    return handleEntraLogin(request, env);
+  }
+  if (path === '/api/auth/entra/callback' && method === 'GET') {
+    return handleEntraCallback(request, env);
+  }
+  // Magic Link
+  if (path === '/api/auth/magic-link/request' && method === 'POST') {
+    return handleMagicLinkRequest(request, env);
+  }
+  if (path === '/api/auth/magic-link/verify' && method === 'GET') {
+    return handleMagicLinkVerify(request, env);
+  }
+  // Station PIN
+  if (path === '/api/auth/pin' && method === 'POST') {
+    return handlePinAuth(request, env);
+  }
+  // Session management
+  if (path === '/api/auth/me' && method === 'GET') {
+    return handleAuthMe(request, env);
+  }
+  if (path === '/api/auth/logout' && method === 'POST') {
+    return handleAuthLogout(request, env);
   }
 
   // ── Stations ──────────────────────────────────────────────────────

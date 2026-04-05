@@ -3,7 +3,6 @@
 import type { Env } from './types';
 import { getInventoryTemplate, submitInventory } from './lib/db';
 import { ok, badRequest, notFound, serverError } from './lib/response';
-import type { Category } from '@shared/types';
 
 /**
  * GET /api/inventory/current/:stationId
@@ -76,9 +75,10 @@ export async function handleSubmitInventory(request: Request, env: Env): Promise
       itemCount: result.itemCount,
       itemsShort: result.itemsShort,
       orderId: result.orderId,
-      message: result.itemsShort > 0
-        ? `Inventory submitted. ${result.itemsShort} item(s) short — resupply order created.`
-        : 'Inventory submitted. All items at or above target.',
+      message:
+        result.itemsShort > 0
+          ? `Inventory submitted. ${result.itemsShort} item(s) short — resupply order created.`
+          : 'Inventory submitted. All items at or above target.',
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to submit inventory';

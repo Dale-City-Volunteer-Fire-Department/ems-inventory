@@ -6,7 +6,14 @@ import { ok, badRequest, serverError } from './lib/response';
 import type { Category } from '@shared/types';
 
 const VALID_CATEGORIES: Category[] = [
-  'Airway', 'Breathing', 'Circulation', 'Medications', 'Splinting', 'Burn', 'OB/Peds', 'Misc',
+  'Airway',
+  'Breathing',
+  'Circulation',
+  'Medications',
+  'Splinting',
+  'Burn',
+  'OB/Peds',
+  'Misc',
 ];
 
 /**

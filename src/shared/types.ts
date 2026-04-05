@@ -60,7 +60,15 @@ export interface Order {
   filled_by: string | null;
 }
 
-export type Category = 'Airway' | 'Breathing' | 'Circulation' | 'Medications' | 'Splinting' | 'Burn' | 'OB/Peds' | 'Misc';
+export type Category =
+  | 'Airway'
+  | 'Breathing'
+  | 'Circulation'
+  | 'Medications'
+  | 'Splinting'
+  | 'Burn'
+  | 'OB/Peds'
+  | 'Misc';
 export type CountStatus = 'not_entered' | 'good' | 'over' | 'short';
 export type OrderStatus = 'pending' | 'in_progress' | 'filled';
 export type UserRole = 'crew' | 'logistics' | 'admin';

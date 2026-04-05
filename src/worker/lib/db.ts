@@ -1,14 +1,6 @@
 // D1 database helpers
 
-import type {
-  Item,
-  Station,
-  StockTarget,
-  InventoryHistory,
-  Order,
-  Category,
-  OrderStatus,
-} from '@shared/types';
+import type { Item, Station, StockTarget, InventoryHistory, Order, Category, OrderStatus } from '@shared/types';
 
 // ── Items ───────────────────────────────────────────────────────────
 
@@ -22,12 +14,12 @@ export async function getItems(db: D1Database, activeOnly = true): Promise<Item[
 
 export async function upsertItem(
   db: D1Database,
-  item: { id?: number; name: string; category: Category; sort_order?: number; is_active?: boolean }
+  item: { id?: number; name: string; category: Category; sort_order?: number; is_active?: boolean },
 ): Promise<Item> {
   if (item.id) {
     await db
       .prepare(
-        `UPDATE items SET name = ?, category = ?, sort_order = ?, is_active = ?, updated_at = datetime('now') WHERE id = ?`
+        `UPDATE items SET name = ?, category = ?, sort_order = ?, is_active = ?, updated_at = datetime('now') WHERE id = ?`,
       )
       .bind(item.name, item.category, item.sort_order ?? 0, item.is_active !== false ? 1 : 0, item.id)
       .run();
@@ -38,10 +30,7 @@ export async function upsertItem(
       .prepare('INSERT INTO items (name, category, sort_order, is_active) VALUES (?, ?, ?, ?)')
       .bind(item.name, item.category, item.sort_order ?? 0, item.is_active !== false ? 1 : 0)
       .run();
-    const row = await db
-      .prepare('SELECT * FROM items WHERE id = ?')
-      .bind(result.meta.last_row_id)
-      .first<Item>();
+    const row = await db.prepare('SELECT * FROM items WHERE id = ?').bind(result.meta.last_row_id).first<Item>();
     return row!;
   }
 }
@@ -67,7 +56,7 @@ export async function getStockTargets(db: D1Database, stationId: number): Promis
        FROM stock_targets st
        JOIN items i ON i.id = st.item_id
        WHERE st.station_id = ? AND i.is_active = 1
-       ORDER BY i.category, i.sort_order, i.name`
+       ORDER BY i.category, i.sort_order, i.name`,
     )
     .bind(stationId)
     .all<StockTargetWithItem>();
@@ -78,13 +67,13 @@ export async function updateStockTarget(
   db: D1Database,
   itemId: number,
   stationId: number,
-  targetCount: number
+  targetCount: number,
 ): Promise<void> {
   await db
     .prepare(
       `INSERT INTO stock_targets (item_id, station_id, target_count)
        VALUES (?, ?, ?)
-       ON CONFLICT(item_id, station_id) DO UPDATE SET target_count = ?, updated_at = datetime('now')`
+       ON CONFLICT(item_id, station_id) DO UPDATE SET target_count = ?, updated_at = datetime('now')`,
     )
     .bind(itemId, stationId, targetCount, targetCount)
     .run();
@@ -108,7 +97,7 @@ export async function getInventoryTemplate(db: D1Database, stationId: number): P
        FROM items i
        LEFT JOIN stock_targets st ON st.item_id = i.id AND st.station_id = ?
        WHERE i.is_active = 1
-       ORDER BY i.category, i.sort_order, i.name`
+       ORDER BY i.category, i.sort_order, i.name`,
     )
     .bind(stationId)
     .all<TemplateItem>();
@@ -133,7 +122,7 @@ export async function submitInventory(
   db: D1Database,
   stationId: number,
   counts: CountEntry[],
-  submittedBy?: string
+  submittedBy?: string,
 ): Promise<SubmitResult> {
   // Get station name for snapshots
   const station = await db.prepare('SELECT name FROM stations WHERE id = ?').bind(stationId).first<{ name: string }>();
@@ -152,7 +141,9 @@ export async function submitInventory(
   const missingItems = template.filter((t) => !countMap.has(t.item_id));
   if (missingItems.length > 0) {
     const names = missingItems.slice(0, 5).map((m) => m.item_name);
-    throw new Error(`Missing counts for ${missingItems.length} items: ${names.join(', ')}${missingItems.length > 5 ? '...' : ''}`);
+    throw new Error(
+      `Missing counts for ${missingItems.length} items: ${names.join(', ')}${missingItems.length > 5 ? '...' : ''}`,
+    );
   }
 
   // Create session
@@ -176,9 +167,7 @@ export async function submitInventory(
   }
 
   const sessionResult = await db
-    .prepare(
-      'INSERT INTO inventory_sessions (station_id, submitted_by, item_count, items_short) VALUES (?, ?, ?, ?)'
-    )
+    .prepare('INSERT INTO inventory_sessions (station_id, submitted_by, item_count, items_short) VALUES (?, ?, ?, ?)')
     .bind(stationId, submittedBy ?? null, template.length, itemsShort)
     .run();
 
@@ -187,7 +176,7 @@ export async function submitInventory(
   // Insert history records
   const historyStmt = db.prepare(
     `INSERT INTO inventory_history (session_id, item_name, category, station_name, target_count, actual_count, delta, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   );
 
   const batch: D1PreparedStatement[] = [];
@@ -200,7 +189,7 @@ export async function submitInventory(
     else status = 'short';
 
     batch.push(
-      historyStmt.bind(sessionId, t.item_name, t.category, station.name, t.target_count, actual, delta, status)
+      historyStmt.bind(sessionId, t.item_name, t.category, station.name, t.target_count, actual, delta, status),
     );
   }
   await db.batch(batch);
@@ -210,9 +199,7 @@ export async function submitInventory(
   if (shortItems.length > 0) {
     const pickList = formatPickList(station.name, shortItems);
     const orderResult = await db
-      .prepare(
-        'INSERT INTO orders (session_id, station_id, items_short, pick_list, status) VALUES (?, ?, ?, ?, ?)'
-      )
+      .prepare('INSERT INTO orders (session_id, station_id, items_short, pick_list, status) VALUES (?, ?, ?, ?, ?)')
       .bind(sessionId, stationId, itemsShort, pickList, 'pending')
       .run();
     orderId = orderResult.meta.last_row_id as number;
@@ -223,7 +210,7 @@ export async function submitInventory(
 
 function formatPickList(
   stationName: string,
-  shortItems: { item_name: string; category: string; actual: number; target: number; need: number }[]
+  shortItems: { item_name: string; category: string; actual: number; target: number; need: number }[],
 ): string {
   const now = new Date().toISOString().replace('T', ' ').slice(0, 16);
   const lines: string[] = [];
@@ -329,7 +316,10 @@ export async function getOrders(db: D1Database, filters?: OrderFilters): Promise
   const sql = `SELECT * FROM orders ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
   binds.push(limit, offset);
 
-  const result = await db.prepare(sql).bind(...binds).all<Order>();
+  const result = await db
+    .prepare(sql)
+    .bind(...binds)
+    .all<Order>();
   return result.results;
 }
 
@@ -337,7 +327,7 @@ export async function updateOrderStatus(
   db: D1Database,
   orderId: number,
   status: OrderStatus,
-  filledBy?: string
+  filledBy?: string,
 ): Promise<void> {
   if (status === 'filled') {
     await db
