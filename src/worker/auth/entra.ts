@@ -10,8 +10,7 @@ function tokenEndpoint(env: Env): string {
 }
 
 function baseUrl(_env: Env): string {
-  // In production this should be the real domain; for now derive from env or default
-  return 'https://inventory.dcvfd.org';
+  return 'https://emsinventory.dcvfd.org';
 }
 
 /** SHA-256 hash → base64url (for PKCE S256) */
