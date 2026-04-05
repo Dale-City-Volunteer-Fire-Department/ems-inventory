@@ -11,13 +11,13 @@ ORG_NAME = "Dale City Volunteer Fire Department"
 [[d1_databases]]
 binding = "DB"
 database_name = "ems-inventory-db"
-database_id = "PLACEHOLDER-run-wrangler-d1-create"
+database_id = "2ab90cd3-01e5-4151-b664-2714da807fe8"
 migrations_dir = "migrations"
 
 # KV Namespace (sessions)
 [[kv_namespaces]]
 binding = "SESSIONS"
-id = "PLACEHOLDER-run-wrangler-kv-create"
+id = "37a2d67b1b564b548c882fca5140f3d9"
 
 # Secrets stored via `wrangler secret put` or Cloudflare Dashboard:
 #   wrangler secret put AZURE_AD_CLIENT_ID
