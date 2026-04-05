@@ -90,7 +90,7 @@ export default function LogisticsDashboard() {
   ];
 
   return (
-    <div className="min-h-dvh bg-neutral-900 text-white pb-20">
+    <div className="min-h-dvh bg-neutral-950 text-white pb-20 md:pb-6">
       <div className="px-4 py-4 border-b border-neutral-800">
         <h1 className="text-xl font-bold">Logistics Dashboard</h1>
       </div>
@@ -103,7 +103,7 @@ export default function LogisticsDashboard() {
             type="button"
             onClick={() => setTab(t.id)}
             className={`shrink-0 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              tab === t.id ? 'border-blue-500 text-blue-400' : 'border-transparent text-neutral-400 hover:text-white'
+              tab === t.id ? 'border-dcvfd-accent text-dcvfd-accent' : 'border-transparent text-neutral-400 hover:text-white'
             }`}
           >
             {t.label}
@@ -111,15 +111,15 @@ export default function LogisticsDashboard() {
         ))}
       </div>
 
-      <div className="px-4 py-4">
+      <div className="px-4 py-4 md:max-w-6xl md:mx-auto">
         {loading && (
           <div className="flex justify-center py-12">
-            <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full" />
+            <div className="animate-spin h-8 w-8 border-2 border-dcvfd-accent border-t-transparent rounded-full" />
           </div>
         )}
 
         {!loading && tab === 'overview' && (
-          <div className="space-y-3">
+          <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
             {summaries.map((s) => (
               <StationCard
                 key={s.stationId}

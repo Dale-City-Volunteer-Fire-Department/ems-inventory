@@ -112,7 +112,7 @@ export default function AdminPanel() {
   ];
 
   return (
-    <div className="min-h-dvh bg-neutral-900 text-white pb-20">
+    <div className="min-h-dvh bg-neutral-950 text-white pb-20 md:pb-6">
       <div className="px-4 py-4 border-b border-neutral-800">
         <h1 className="text-xl font-bold">Admin Panel</h1>
       </div>
@@ -125,7 +125,7 @@ export default function AdminPanel() {
             type="button"
             onClick={() => setTab(t.id)}
             className={`shrink-0 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              tab === t.id ? 'border-blue-500 text-blue-400' : 'border-transparent text-neutral-400 hover:text-white'
+              tab === t.id ? 'border-dcvfd-accent text-dcvfd-accent' : 'border-transparent text-neutral-400 hover:text-white'
             }`}
           >
             {t.label}
@@ -133,7 +133,7 @@ export default function AdminPanel() {
         ))}
       </div>
 
-      <div className="px-4 py-4">
+      <div className="px-4 py-4 md:max-w-6xl md:mx-auto">
         {/* Catalog tab */}
         {tab === 'catalog' && (
           <div>
@@ -142,12 +142,12 @@ export default function AdminPanel() {
               placeholder="Search items..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2.5 text-white text-sm mb-4 placeholder:text-neutral-500 outline-none focus:border-blue-500"
+              className="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2.5 text-white text-sm mb-4 placeholder:text-neutral-500 outline-none focus:border-dcvfd-accent"
             />
 
             {loading ? (
               <div className="flex justify-center py-12">
-                <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full" />
+                <div className="animate-spin h-8 w-8 border-2 border-dcvfd-accent border-t-transparent rounded-full" />
               </div>
             ) : (
               <div className="space-y-1">
@@ -228,7 +228,7 @@ export default function AdminPanel() {
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="e.g. NPA 28Fr"
-                className="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2.5 text-white text-sm placeholder:text-neutral-500 outline-none focus:border-blue-500"
+                className="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2.5 text-white text-sm placeholder:text-neutral-500 outline-none focus:border-dcvfd-accent"
               />
             </div>
 
@@ -256,7 +256,7 @@ export default function AdminPanel() {
               type="button"
               onClick={handleAddItem}
               disabled={!newName.trim() || saving}
-              className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 active:bg-blue-800 disabled:bg-neutral-700 disabled:text-neutral-500 min-h-[48px]"
+              className="w-full rounded-lg bg-dcvfd py-3 font-semibold text-white hover:bg-dcvfd-light active:bg-dcvfd-dark disabled:bg-neutral-700 disabled:text-neutral-500 min-h-[48px]"
             >
               {saving ? 'Adding...' : 'Add Item'}
             </button>

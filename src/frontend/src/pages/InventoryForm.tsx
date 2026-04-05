@@ -136,12 +136,12 @@ export default function InventoryForm({ station, onChangeStation }: InventoryFor
       </div>
 
       {/* Fixed bottom submit bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-neutral-900/95 backdrop-blur-sm border-t border-neutral-800 px-4 py-3">
+      <div className="fixed bottom-0 left-0 right-0 md:left-64 z-30 bg-neutral-950/95 backdrop-blur-sm border-t border-neutral-800 px-4 py-3">
         <button
           type="button"
           onClick={handleSubmit}
           disabled={!canSubmit || submitting}
-          className="w-full rounded-lg bg-blue-600 py-3.5 font-semibold text-white transition-colors hover:bg-blue-700 active:bg-blue-800 disabled:bg-neutral-700 disabled:text-neutral-500 min-h-[48px]"
+          className="w-full md:max-w-md md:mx-auto md:block rounded-lg bg-dcvfd py-3.5 font-semibold text-white transition-colors hover:bg-dcvfd-light active:bg-dcvfd-dark disabled:bg-neutral-700 disabled:text-neutral-500 min-h-[48px]"
         >
           {submitting ? 'Submitting...' : canSubmit ? 'Submit Inventory' : `${progress.remaining} items remaining`}
         </button>
@@ -165,7 +165,7 @@ export default function InventoryForm({ station, onChangeStation }: InventoryFor
           <button
             type="button"
             onClick={confirmSubmit}
-            className="flex-1 rounded-lg bg-blue-600 py-2.5 font-medium text-white hover:bg-blue-700 min-h-[44px]"
+            className="flex-1 rounded-lg bg-dcvfd py-2.5 font-medium text-white hover:bg-dcvfd-light min-h-[44px]"
           >
             Confirm
           </button>

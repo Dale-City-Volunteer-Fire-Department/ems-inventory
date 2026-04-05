@@ -55,7 +55,7 @@ export default function NumericInput({
   );
 
   // Determine border color based on delta from target
-  let borderClass = 'border-neutral-700 focus:border-blue-500';
+  let borderClass = 'border-neutral-700 focus:border-dcvfd-accent';
   if (value !== null && value !== undefined && target !== undefined) {
     if (value >= target) {
       borderClass = 'border-green-600 focus:border-green-500';
