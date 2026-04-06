@@ -6,7 +6,8 @@ import { handleGetStations } from './stations';
 import { handleGetOrders, handleUpdateOrder } from './orders';
 import { handleGetTargets, handleUpdateTarget } from './stock-targets';
 import { getHistory } from './lib/db';
-import { ok, badRequest, notFound, serverError } from './lib/response';
+import { ok, badRequest, notFound, forbidden, serverError } from './lib/response';
+import type { Category } from '../shared/types';
 import { handleEntraLogin, handleEntraCallback } from './auth/entra';
 import { handleMagicLinkRequest, handleMagicLinkVerify } from './auth/magic-link';
 import { handlePinAuth } from './auth/pin';
@@ -14,11 +15,67 @@ import { handleAuthMe, handleAuthLogout } from './auth/handlers';
 import { requireAuth } from './middleware/auth';
 import { requireRole } from './middleware/rbac';
 
+// ── CSRF Origin verification ────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  'https://emsinventory.dcvfd.org',
+  'http://localhost:5173',
+  'http://localhost:8787',
+  'http://127.0.0.1:5173',
+];
+
+// Auth callback routes that are GET-based redirects and don't need CSRF
+const CSRF_EXEMPT_PATHS = [
+  '/api/auth/entra/callback',
+  '/api/auth/magic-link/verify',
+];
+
+function verifyCsrfOrigin(request: Request): Response | null {
+  const method = request.method;
+  // Only check mutating methods
+  if (method !== 'POST' && method !== 'PUT' && method !== 'DELETE' && method !== 'PATCH') {
+    return null;
+  }
+
+  const url = new URL(request.url);
+  // Only check /api/ routes
+  if (!url.pathname.startsWith('/api/')) {
+    return null;
+  }
+
+  // Exempt auth callback routes
+  if (CSRF_EXEMPT_PATHS.includes(url.pathname)) {
+    return null;
+  }
+
+  const origin = request.headers.get('Origin');
+  if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
+    return forbidden('Invalid or missing Origin header');
+  }
+
+  return null;
+}
+
+// ── Valid categories for item validation ─────────────────────────────
+const VALID_CATEGORIES: Category[] = [
+  'Airway',
+  'Breathing',
+  'Circulation',
+  'Medications',
+  'Splinting',
+  'Burn',
+  'OB/Peds',
+  'Misc',
+];
+
 export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     // Handle CORS preflight
     const corsResponse = handleCorsPreflightRequest(request);
     if (corsResponse) return corsResponse;
+
+    // MEDIUM-5: CSRF — verify Origin header on mutating requests to /api/ routes
+    const csrfResult = verifyCsrfOrigin(request);
+    if (csrfResult) return addCorsHeaders(request, csrfResult);
 
     // Route the request and add CORS headers to the response
     const response = await routeRequest(request, env);
@@ -109,17 +166,26 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
   }
 
   // ── Inventory ─────────────────────────────────────────────────────
-  // GET /api/inventory/current/:stationId/summary — dashboard summary
+  // GET /api/inventory/current/:stationId/summary — dashboard summary (requires auth)
   if (/^\/api\/inventory\/current\/\d+\/summary$/.test(path) && method === 'GET') {
+    const session = await requireAuth(request, env);
+    if (session instanceof Response) return session;
     return handleGetInventorySummary(request, env, path);
   }
+  // GET /api/inventory/current/:stationId — public (template for form before PIN auth)
   if (path.startsWith('/api/inventory/current/') && method === 'GET') {
     return handleGetTemplate(request, env);
   }
+  // POST /api/inventory/submit — requires auth (any role)
   if (path === '/api/inventory/submit' && method === 'POST') {
+    const session = await requireAuth(request, env);
+    if (session instanceof Response) return session;
     return handleSubmitInventory(request, env);
   }
+  // GET /api/inventory/history — requires auth (any role)
   if (path === '/api/inventory/history' && method === 'GET') {
+    const session = await requireAuth(request, env);
+    if (session instanceof Response) return session;
     return handleGetHistory(request, env);
   }
 
@@ -168,6 +234,16 @@ async function handleUpdateItemById(request: Request, env: Env, path: string): P
     const sort_order = body.sort_order !== undefined ? body.sort_order : current.sort_order;
     const is_active = body.is_active !== undefined ? (body.is_active ? 1 : 0) : current.is_active;
 
+    // MEDIUM-2: Validate name length (1-200 chars)
+    if (typeof name !== 'string' || name.length < 1 || name.length > 200) {
+      return badRequest('Item name must be between 1 and 200 characters');
+    }
+
+    // MEDIUM-2: Validate category against allowed values
+    if (!VALID_CATEGORIES.includes(category as Category)) {
+      return badRequest(`Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}`);
+    }
+
     await env.DB
       .prepare(`UPDATE items SET name = ?, category = ?, sort_order = ?, is_active = ?, updated_at = datetime('now') WHERE id = ?`)
       .bind(name, category, sort_order, is_active, id)
@@ -176,7 +252,8 @@ async function handleUpdateItemById(request: Request, env: Env, path: string): P
     const updated = await env.DB.prepare('SELECT * FROM items WHERE id = ?').bind(id).first();
     return ok({ item: updated });
   } catch (err) {
-    return serverError(err instanceof Error ? err.message : 'Failed to update item');
+    console.error('[updateItemById]', err);
+    return serverError('Failed to update item');
   }
 }
 
@@ -203,7 +280,8 @@ async function handleUpdateTargetById(request: Request, env: Env, path: string):
     const updated = await env.DB.prepare('SELECT * FROM stock_targets WHERE id = ?').bind(id).first();
     return ok({ target: updated });
   } catch (err) {
-    return serverError(err instanceof Error ? err.message : 'Failed to update stock target');
+    console.error('[updateTargetById]', err);
+    return serverError('Failed to update stock target');
   }
 }
 
@@ -251,7 +329,8 @@ async function handleGetInventorySummary(_request: Request, env: Env, path: stri
       shortages,
     });
   } catch (err) {
-    return serverError(err instanceof Error ? err.message : 'Failed to get inventory summary');
+    console.error('[getInventorySummary]', err);
+    return serverError('Failed to get inventory summary');
   }
 }
 
@@ -280,6 +359,7 @@ async function handleGetHistory(request: Request, env: Env): Promise<Response> {
 
     return ok({ history, count: history.length });
   } catch (err) {
-    return serverError(err instanceof Error ? err.message : 'Failed to get history');
+    console.error('[getHistory]', err);
+    return serverError('Failed to get history');
   }
 }

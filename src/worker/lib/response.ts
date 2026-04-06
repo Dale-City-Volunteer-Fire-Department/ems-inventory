@@ -26,6 +26,10 @@ export function notFound(message = 'Not found'): Response {
   return new Response(JSON.stringify({ error: message }), { status: 404, headers: JSON_HEADERS });
 }
 
+export function tooManyRequests(message = 'Too many requests'): Response {
+  return new Response(JSON.stringify({ error: message }), { status: 429, headers: JSON_HEADERS });
+}
+
 export function serverError(message = 'Internal server error'): Response {
   console.error('[500]', message);
   return new Response(JSON.stringify({ error: message }), { status: 500, headers: JSON_HEADERS });

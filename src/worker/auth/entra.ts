@@ -1,7 +1,7 @@
 import type { Env } from '../types';
 import { createSession, buildSessionCookie } from './session';
 import { upsertUser } from './user-db';
-import { badRequest, serverError } from '../lib/response';
+import { badRequest, forbidden, serverError } from '../lib/response';
 
 // ── OIDC helpers ───────────────────────────────────────────────────
 
@@ -76,7 +76,8 @@ export async function handleEntraLogin(_request: Request, env: Env): Promise<Res
     const url = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize?${params.toString()}`;
     return Response.redirect(url, 302);
   } catch (err) {
-    return serverError(err instanceof Error ? err.message : 'Entra login failed');
+    console.error('[handleEntraLogin]', err);
+    return serverError('Entra login failed');
   }
 }
 
@@ -93,7 +94,8 @@ export async function handleEntraCallback(request: Request, env: Env): Promise<R
 
     if (error) {
       const desc = url.searchParams.get('error_description') ?? error;
-      return badRequest(`Entra auth error: ${desc}`);
+      console.error('[entra] Auth error:', error, desc);
+      return badRequest('Authentication failed. Please try again.');
     }
 
     if (!code || !state) {
@@ -142,12 +144,23 @@ export async function handleEntraCallback(request: Request, env: Env): Promise<R
       return badRequest('No email in ID token');
     }
 
-    // Create/update user
+    // Domain allowlist — only approved orgs may authenticate
+    const ALLOWED_DOMAINS = ['pwcgov.org', 'dcvfd.org'];
+    const domain = email.split('@').pop()?.toLowerCase();
+    if (!domain || !ALLOWED_DOMAINS.includes(domain)) {
+      return forbidden('Account not authorized for this application');
+    }
+
+    // Create/update user (returns null when the account is deactivated)
     const user = await upsertUser(env.DB, {
       email,
       name,
       authMethod: 'entra_sso',
     });
+
+    if (!user) {
+      return forbidden('Account is deactivated');
+    }
 
     // Create session
     const { sessionId } = await createSession(env, {
@@ -172,6 +185,7 @@ export async function handleEntraCallback(request: Request, env: Env): Promise<R
       },
     });
   } catch (err) {
-    return serverError(err instanceof Error ? err.message : 'Entra callback failed');
+    console.error('[handleEntraCallback]', err);
+    return serverError('Entra callback failed');
   }
 }

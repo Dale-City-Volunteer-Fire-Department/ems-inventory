@@ -6,7 +6,10 @@
 set -euo pipefail
 
 VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
-VAULT_TOKEN="${VAULT_TOKEN:-dcvfd-dev-root}"
+if [ -z "${VAULT_TOKEN:-}" ]; then
+  echo "ERROR: VAULT_TOKEN must be set" >&2
+  exit 1
+fi
 export VAULT_ADDR VAULT_TOKEN
 
 vault_get() {

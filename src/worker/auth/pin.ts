@@ -1,6 +1,23 @@
 import type { Env } from '../types';
 import { createSession, buildSessionCookie } from './session';
-import { badRequest, unauthorized, serverError } from '../lib/response';
+import { badRequest, unauthorized, serverError, tooManyRequests } from '../lib/response';
+
+/** Rate limit: max 10 attempts per IP per 5 minutes */
+const PIN_RATE_LIMIT = 10;
+const PIN_RATE_WINDOW = 5 * 60; // 5 minutes in seconds
+
+async function checkPinRateLimit(env: Env, ip: string): Promise<boolean> {
+  const key = `rate:pin:${ip}`;
+  const raw = await env.SESSIONS.get(key, 'text');
+  const count = raw ? parseInt(raw, 10) : 0;
+
+  if (count >= PIN_RATE_LIMIT) {
+    return false; // rate limited
+  }
+
+  await env.SESSIONS.put(key, String(count + 1), { expirationTtl: PIN_RATE_WINDOW });
+  return true; // allowed
+}
 
 // ── Constant-time comparison ───────────────────────────────────────
 
@@ -35,6 +52,13 @@ function constantTimeEqual(a: string, b: string): boolean {
  */
 export async function handlePinAuth(request: Request, env: Env): Promise<Response> {
   try {
+    // MEDIUM-4: Rate limit PIN attempts by IP
+    const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+    const allowed = await checkPinRateLimit(env, ip);
+    if (!allowed) {
+      return tooManyRequests('Too many PIN attempts. Please try again later.');
+    }
+
     const body = (await request.json()) as { pin?: string; stationId?: number };
 
     if (!body.pin || body.stationId == null) {
@@ -118,6 +142,7 @@ export async function handlePinAuth(request: Request, env: Env): Promise<Respons
       },
     );
   } catch (err) {
-    return serverError(err instanceof Error ? err.message : 'PIN auth failed');
+    console.error('[handlePinAuth]', err);
+    return serverError('PIN auth failed');
   }
 }

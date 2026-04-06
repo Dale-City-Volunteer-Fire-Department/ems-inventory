@@ -8,7 +8,11 @@ SQLCMD="/opt/mssql-tools18/bin/sqlcmd"
 
 # --- Pull credentials from Vault ---
 export VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
-export VAULT_TOKEN="${VAULT_TOKEN:-dcvfd-dev-root}"
+if [ -z "${VAULT_TOKEN:-}" ]; then
+  echo "ERROR: VAULT_TOKEN must be set" >&2
+  exit 1
+fi
+export VAULT_TOKEN
 
 echo "==> Fetching Azure SQL credentials from Vault..."
 VAULT_JSON=$(vault kv get -format=json secret/ems-inventory/azure-sql)

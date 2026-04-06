@@ -22,7 +22,7 @@ export interface UserRecord {
 export async function upsertUser(
   db: D1Database,
   data: { email: string; name: string; authMethod: 'entra_sso' | 'magic_link' },
-): Promise<UserRecord> {
+): Promise<UserRecord | null> {
   // Check if user already exists
   const existing = await db
     .prepare('SELECT id, email, name, role, auth_method, station_id, is_active FROM users WHERE email = ?')
@@ -38,6 +38,11 @@ export async function upsertUser(
     }>();
 
   if (existing) {
+    // Reject deactivated users — do not create a session
+    if (existing.is_active === 0) {
+      return null;
+    }
+
     // Update name and auth_method if changed, but preserve role
     await db
       .prepare('UPDATE users SET name = ?, auth_method = ? WHERE id = ?')

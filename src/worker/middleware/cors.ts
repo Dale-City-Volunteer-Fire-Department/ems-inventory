@@ -8,29 +8,31 @@ function getAllowedOrigin(request: Request): string {
   // In dev, allow localhost origins; in prod, lock to the real domain
   if (DEV_ORIGINS.includes(origin)) return origin;
   if (origin === PROD_ORIGIN) return origin;
-  // Fallback: allow the first dev origin (permissive for dev)
-  return DEV_ORIGINS[0];
+  // Unrecognized origin — return empty to deny CORS
+  return '';
 }
 
 export function handleCorsPreflightRequest(request: Request): Response | null {
   if (request.method !== 'OPTIONS') return null;
   const origin = getAllowedOrigin(request);
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Max-Age': '86400',
-    },
-  });
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+  };
+  if (origin) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Credentials'] = 'true';
+  }
+  return new Response(null, { status: 204, headers });
 }
 
 export function addCorsHeaders(request: Request, response: Response): Response {
   const origin = getAllowedOrigin(request);
   const newResponse = new Response(response.body, response);
-  newResponse.headers.set('Access-Control-Allow-Origin', origin);
-  newResponse.headers.set('Access-Control-Allow-Credentials', 'true');
+  if (origin) {
+    newResponse.headers.set('Access-Control-Allow-Origin', origin);
+    newResponse.headers.set('Access-Control-Allow-Credentials', 'true');
+  }
   return newResponse;
 }

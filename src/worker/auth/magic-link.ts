@@ -1,13 +1,32 @@
 import type { Env } from '../types';
 import { createSession, buildSessionCookie } from './session';
 import { upsertUser } from './user-db';
-import { ok, badRequest, serverError } from '../lib/response';
+import { ok, badRequest, forbidden, serverError, tooManyRequests } from '../lib/response';
 
 /** 15 minutes in seconds */
 const MAGIC_LINK_TTL = 15 * 60;
 
 const ALLOWED_DOMAIN = 'pwcgov.org';
 const FROM_ADDRESS = 'DCVFD EMS Inventory <noreply@dcvfd.org>';
+
+/** Rate limit: max 5 requests per email per 15 minutes */
+const MAGIC_RATE_LIMIT = 5;
+const MAGIC_RATE_WINDOW = 15 * 60; // 15 minutes in seconds
+
+// ── Rate limiting ─────────────────────────────────────────────────
+
+async function checkMagicLinkRateLimit(env: Env, email: string): Promise<boolean> {
+  const key = `rate:magic:${email}`;
+  const raw = await env.SESSIONS.get(key, 'text');
+  const count = raw ? parseInt(raw, 10) : 0;
+
+  if (count >= MAGIC_RATE_LIMIT) {
+    return false; // rate limited
+  }
+
+  await env.SESSIONS.put(key, String(count + 1), { expirationTtl: MAGIC_RATE_WINDOW });
+  return true; // allowed
+}
 
 // ── Handlers ───────────────────────────────────────────────────────
 
@@ -26,33 +45,48 @@ export async function handleMagicLinkRequest(request: Request, env: Env): Promis
       return badRequest('Valid email address required');
     }
 
+    // MEDIUM-1: Reject emails with multiple @ signs
+    if (email.split('@').length !== 2) {
+      return badRequest('Invalid email address');
+    }
+
     // Restrict to allowed domain
     const domain = email.split('@')[1];
     if (domain !== ALLOWED_DOMAIN) {
       return badRequest(`Only @${ALLOWED_DOMAIN} email addresses are allowed`);
     }
 
+    // MEDIUM-4: Rate limit magic link requests
+    const allowed = await checkMagicLinkRateLimit(env, email);
+    if (!allowed) {
+      return tooManyRequests('Too many magic link requests. Please try again later.');
+    }
+
+    // HIGH-1: Fail early if email service is not configured
+    if (!env.RESEND_API_KEY) {
+      return serverError('Email service not configured');
+    }
+
     // Generate a cryptographically random token
     const token = crypto.randomUUID();
 
-    // Store token → email mapping in KV with 15 min TTL
+    // Store token -> email mapping in KV with 15 min TTL
     await env.SESSIONS.put(`magic_link:${token}`, JSON.stringify({ email }), { expirationTtl: MAGIC_LINK_TTL });
 
     const verifyUrl = `https://emsinventory.dcvfd.org/api/auth/magic-link/verify?token=${token}`;
 
     // Send email via Resend
-    if (env.RESEND_API_KEY) {
-      const emailRes = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: FROM_ADDRESS,
-          to: [email],
-          subject: 'Sign in to DCVFD EMS Inventory',
-          html: `
+    const emailRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: FROM_ADDRESS,
+        to: [email],
+        subject: 'Sign in to DCVFD EMS Inventory',
+        html: `
             <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
               <h2 style="color: #c41e3a;">DCVFD EMS Inventory</h2>
               <p>Click the button below to sign in. This link expires in 15 minutes.</p>
@@ -67,19 +101,21 @@ export async function handleMagicLinkRequest(request: Request, env: Env): Promis
               <p style="color: #999; font-size: 12px;">Dale City Volunteer Fire Department</p>
             </div>
           `,
-        }),
-      });
+      }),
+    });
 
-      if (!emailRes.ok) {
-        const errBody = await emailRes.text().catch(() => 'Unknown error');
-        console.error('[magic-link] Resend error:', errBody);
-        return serverError('Failed to send magic link email');
-      }
+    if (!emailRes.ok) {
+      const errBody = await emailRes.text().catch(() => 'Unknown error');
+      console.error('[magic-link] Resend error:', errBody);
+      // Clean up the token since email failed
+      await env.SESSIONS.delete(`magic_link:${token}`);
+      return serverError('Failed to send magic link email');
     }
 
     return ok({ message: 'Magic link sent — check your email' });
   } catch (err) {
-    return serverError(err instanceof Error ? err.message : 'Magic link request failed');
+    console.error('[handleMagicLinkRequest]', err);
+    return serverError('Magic link request failed');
   }
 }
 
@@ -113,6 +149,11 @@ export async function handleMagicLinkVerify(request: Request, env: Env): Promise
       authMethod: 'magic_link',
     });
 
+    // HIGH-2: Reject deactivated users
+    if (!user) {
+      return forbidden('Account is deactivated');
+    }
+
     // Create session
     const { sessionId } = await createSession(env, {
       userId: user.id,
@@ -136,6 +177,7 @@ export async function handleMagicLinkVerify(request: Request, env: Env): Promise
       },
     });
   } catch (err) {
-    return serverError(err instanceof Error ? err.message : 'Magic link verification failed');
+    console.error('[handleMagicLinkVerify]', err);
+    return serverError('Magic link verification failed');
   }
 }
