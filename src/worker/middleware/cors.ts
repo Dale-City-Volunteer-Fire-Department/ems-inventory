@@ -1,7 +1,7 @@
 // CORS middleware
 
 const DEV_ORIGINS = ['http://localhost:5173', 'http://localhost:8787', 'http://127.0.0.1:5173'];
-const PROD_ORIGIN = 'https://inventory.dcvfd.org';
+const PROD_ORIGIN = 'https://emsinventory.dcvfd.org';
 
 function getAllowedOrigin(request: Request): string {
   const origin = request.headers.get('Origin') ?? '';

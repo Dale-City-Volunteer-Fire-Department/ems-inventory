@@ -33,13 +33,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!cancelled) setUser(null);
           return;
         }
-        const data = (await res.json()) as { user?: { role: UserRole; name: string; email: string; stationId?: number } };
-        if (!cancelled && data.user) {
+        const data = (await res.json()) as { role?: UserRole; name?: string; email?: string | null; stationId?: number | null };
+        if (!cancelled && data.role) {
           setUser({
-            role: data.user.role,
-            name: data.user.name,
-            email: data.user.email,
-            stationId: data.user.stationId ?? null,
+            role: data.role,
+            name: data.name ?? '',
+            email: data.email ?? '',
+            stationId: data.stationId ?? null,
           });
         }
       } catch {
