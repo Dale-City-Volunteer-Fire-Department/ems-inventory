@@ -9,8 +9,12 @@ export default function Login() {
   const [view, setView] = useState<View>('main');
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center bg-neutral-950 text-white p-6">
-      <div className="w-full max-w-sm flex flex-col items-center">
+    <div
+      className="min-h-dvh flex flex-col items-center justify-center text-white p-6 bg-cover bg-center bg-no-repeat relative"
+      style={{ backgroundImage: "url('/login-bg.jpg')" }}
+    >
+      <div className="absolute inset-0 bg-black/50" />
+      <div className="w-full max-w-sm flex flex-col items-center relative z-10">
         <img src="/dcvfd-logo.svg" alt="DCVFD" className="h-20 w-auto mb-4" />
         <h1 className="text-2xl font-bold mb-1">DCVFD EMS Inventory</h1>
         <p className="text-neutral-400 text-sm mb-10">Dale City Volunteer Fire Department</p>
@@ -20,7 +24,7 @@ export default function Login() {
         {view === 'magic-link' && <MagicLinkForm onBack={() => setView('main')} />}
       </div>
 
-      <p className="absolute bottom-6 text-xs text-neutral-600 text-center">
+      <p className="absolute bottom-6 text-xs text-neutral-600 text-center z-10">
         &copy; 2026 Dale City Volunteer Fire Department, Inc.
       </p>
     </div>
@@ -95,7 +99,8 @@ function PinForm({ onBack, onLogin }: { onBack: () => void; onLogin: (user: Auth
   useEffect(() => {
     fetch('/api/stations')
       .then((r) => r.json())
-      .then((data: { stations?: Station[] }) => {
+      .then((data) => (data as { stations?: Station[] }))
+      .then((data) => {
         if (data.stations) setStations(data.stations);
       })
       .catch(() => setError('Failed to load stations'));
@@ -242,7 +247,7 @@ function MagicLinkForm({ onBack }: { onBack: () => void }) {
 
       <input
         type="email"
-        placeholder="you@dcvfd.org"
+        placeholder="you@pwcgov.org"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         autoFocus

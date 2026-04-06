@@ -12,10 +12,10 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     ...((customHeaders as Record<string, string>) ?? {}),
   };
 
-  // TODO: add auth token from session/cookie
   const res = await fetch(`${BASE_URL}${path}`, {
     ...rest,
     headers,
+    credentials: 'same-origin',
     body: body ? JSON.stringify(body) : undefined,
   });
 

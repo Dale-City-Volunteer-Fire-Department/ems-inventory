@@ -24,6 +24,7 @@ id = "37a2d67b1b564b548c882fca5140f3d9"
 #   wrangler secret put AZURE_AD_TENANT_ID
 #   wrangler secret put STATION_PIN
 #   wrangler secret put MAGIC_LINK_SECRET
+#   wrangler secret put RESEND_API_KEY
 
 # Static frontend assets — Worker serves the SPA for non-API paths.
 # Build the frontend first: npm run build (runs vite build in src/frontend).
