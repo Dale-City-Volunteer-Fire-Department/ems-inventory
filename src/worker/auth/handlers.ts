@@ -1,22 +1,18 @@
 import type { Env } from '../types';
-import { getSession, destroySession, parseSessionCookie, buildClearSessionCookie } from './session';
+import { destroySession, parseSessionCookie, buildClearSessionCookie } from './session';
+import { validateSession } from '../middleware/auth';
 import { ok, unauthorized } from '../lib/response';
 
 /**
  * GET /api/auth/me
  * Returns the current session data, or 401 if not authenticated.
+ * Uses validateSession to enforce is_active check.
  */
 export async function handleAuthMe(request: Request, env: Env): Promise<Response> {
-  const cookieHeader = request.headers.get('Cookie');
-  const sessionId = parseSessionCookie(cookieHeader);
+  const session = await validateSession(request, env);
 
-  if (!sessionId) {
-    return unauthorized('Not authenticated');
-  }
-
-  const session = await getSession(env, sessionId);
   if (!session) {
-    return unauthorized('Session expired');
+    return unauthorized('Authentication required');
   }
 
   return ok({

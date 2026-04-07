@@ -1,6 +1,6 @@
 import type { Env } from '../types';
 import { createSession, buildSessionCookie } from './session';
-import { badRequest, unauthorized, serverError, tooManyRequests } from '../lib/response';
+import { badRequest, forbidden, unauthorized, serverError, tooManyRequests } from '../lib/response';
 
 /** Rate limit: max 10 attempts per IP per 5 minutes */
 const PIN_RATE_LIMIT = 10;
@@ -91,11 +91,19 @@ export async function handlePinAuth(request: Request, env: Env): Promise<Respons
 
     // Create/find a PIN user for this station
     const userName = `PIN User - ${station.name}`;
-    let user = await env.DB.prepare(
-      'SELECT id, name, role, station_id FROM users WHERE name = ? AND auth_method = ? AND station_id = ?',
+
+    // Check if user exists (regardless of active status) to detect deactivated accounts
+    const existingUser = await env.DB.prepare(
+      'SELECT id, name, role, station_id, is_active FROM users WHERE name = ? AND auth_method = ? AND station_id = ?',
     )
       .bind(userName, 'pin', stationId)
-      .first<{ id: number; name: string; role: string; station_id: number | null }>();
+      .first<{ id: number; name: string; role: string; station_id: number | null; is_active: number }>();
+
+    if (existingUser && existingUser.is_active === 0) {
+      return forbidden('Account is deactivated');
+    }
+
+    let user = existingUser as { id: number; name: string; role: string; station_id: number | null } | null;
 
     if (!user) {
       const result = await env.DB.prepare('INSERT INTO users (name, role, auth_method, station_id) VALUES (?, ?, ?, ?)')
