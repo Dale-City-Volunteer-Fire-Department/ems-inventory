@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createMockKV, createMockEnv } from '../helpers/mocks';
+import { createMockKV, createMockEnv, StatefulD1Mock } from '../helpers/mocks';
 import {
   createSession,
   getSession,
@@ -8,6 +8,7 @@ import {
   buildSessionCookie,
   buildClearSessionCookie,
 } from '../../src/worker/auth/session';
+import { validateSession } from '../../src/worker/middleware/auth';
 import type { UserRole } from '../../src/shared/types';
 
 // ── Tests ────────────────────────────────────────────────────────────
@@ -274,6 +275,180 @@ describe('Auth Logic', () => {
       const cookie = buildClearSessionCookie();
       expect(cookie).toContain('ems_session=');
       expect(cookie).toContain('Max-Age=0');
+    });
+  });
+
+  describe('validateSession — auth middleware', () => {
+    it('returns null when no cookie is present', async () => {
+      const env = createMockEnv();
+      const request = new Request('https://emsinventory.dcvfd.org/api/items', {
+        method: 'GET',
+      });
+      const result = await validateSession(request, env);
+      expect(result).toBeNull();
+    });
+
+    it('returns null when session ID does not exist in KV', async () => {
+      const env = createMockEnv();
+      const request = new Request('https://emsinventory.dcvfd.org/api/items', {
+        method: 'GET',
+        headers: { Cookie: 'ems_session=nonexistent-session-id' },
+      });
+      const result = await validateSession(request, env);
+      expect(result).toBeNull();
+    });
+
+    it('returns session when user is active (is_active = 1)', async () => {
+      const d1Mock = new StatefulD1Mock();
+      d1Mock.onQuery('SELECT is_active FROM users WHERE id', () => [{ is_active: 1 }]);
+
+      const kv = createMockKV();
+      const env = createMockEnv({ DB: d1Mock.asD1(), SESSIONS: kv });
+
+      // Create a session in KV
+      const { sessionId } = await createSession(env, {
+        userId: 1,
+        email: 'crew@dcvfd.org',
+        name: 'Active Crew',
+        role: 'crew' as UserRole,
+        stationId: 10,
+        authMethod: 'pin',
+      });
+
+      const request = new Request('https://emsinventory.dcvfd.org/api/items', {
+        method: 'GET',
+        headers: { Cookie: `ems_session=${sessionId}` },
+      });
+
+      const result = await validateSession(request, env);
+      expect(result).not.toBeNull();
+      expect(result!.userId).toBe(1);
+      expect(result!.name).toBe('Active Crew');
+      expect(result!.role).toBe('crew');
+    });
+
+    it('returns null when user is_active = 0 (deactivated)', async () => {
+      const d1Mock = new StatefulD1Mock();
+      d1Mock.onQuery('SELECT is_active FROM users WHERE id', () => [{ is_active: 0 }]);
+
+      const kv = createMockKV();
+      const env = createMockEnv({ DB: d1Mock.asD1(), SESSIONS: kv });
+
+      // Create a session in KV
+      const { sessionId } = await createSession(env, {
+        userId: 2,
+        email: 'deactivated@dcvfd.org',
+        name: 'Deactivated User',
+        role: 'logistics' as UserRole,
+        stationId: 13,
+        authMethod: 'magic_link',
+      });
+
+      const request = new Request('https://emsinventory.dcvfd.org/api/items', {
+        method: 'GET',
+        headers: { Cookie: `ems_session=${sessionId}` },
+      });
+
+      const result = await validateSession(request, env);
+      expect(result).toBeNull();
+    });
+
+    it('deletes the KV session when user is deactivated', async () => {
+      const d1Mock = new StatefulD1Mock();
+      d1Mock.onQuery('SELECT is_active FROM users WHERE id', () => [{ is_active: 0 }]);
+
+      const kv = createMockKV();
+      const env = createMockEnv({ DB: d1Mock.asD1(), SESSIONS: kv });
+
+      // Create a session in KV
+      const { sessionId } = await createSession(env, {
+        userId: 3,
+        email: 'removed@dcvfd.org',
+        name: 'Removed User',
+        role: 'crew' as UserRole,
+        stationId: 10,
+        authMethod: 'pin',
+      });
+
+      // Confirm session exists before validation
+      const beforeValidation = await getSession(env, sessionId);
+      expect(beforeValidation).not.toBeNull();
+
+      const request = new Request('https://emsinventory.dcvfd.org/api/items', {
+        method: 'GET',
+        headers: { Cookie: `ems_session=${sessionId}` },
+      });
+
+      await validateSession(request, env);
+
+      // Session should now be deleted from KV
+      const afterValidation = await getSession(env, sessionId);
+      expect(afterValidation).toBeNull();
+    });
+
+    it('returns null when userId does not exist in database', async () => {
+      const d1Mock = new StatefulD1Mock();
+      // No handler registered for the users query, so it returns empty => first() returns null
+      d1Mock.onQuery('SELECT is_active FROM users WHERE id', () => []);
+
+      const kv = createMockKV();
+      const env = createMockEnv({ DB: d1Mock.asD1(), SESSIONS: kv });
+
+      // Create a session for a user that no longer exists
+      const { sessionId } = await createSession(env, {
+        userId: 999,
+        email: 'ghost@dcvfd.org',
+        name: 'Ghost User',
+        role: 'admin' as UserRole,
+        stationId: null,
+        authMethod: 'entra_sso',
+      });
+
+      const request = new Request('https://emsinventory.dcvfd.org/api/items', {
+        method: 'GET',
+        headers: { Cookie: `ems_session=${sessionId}` },
+      });
+
+      const result = await validateSession(request, env);
+      expect(result).toBeNull();
+    });
+
+    it('destroys session when userId does not exist in database', async () => {
+      const d1Mock = new StatefulD1Mock();
+      d1Mock.onQuery('SELECT is_active FROM users WHERE id', () => []);
+
+      const kv = createMockKV();
+      const env = createMockEnv({ DB: d1Mock.asD1(), SESSIONS: kv });
+
+      const { sessionId } = await createSession(env, {
+        userId: 999,
+        email: 'ghost@dcvfd.org',
+        name: 'Ghost User',
+        role: 'admin' as UserRole,
+        stationId: null,
+        authMethod: 'entra_sso',
+      });
+
+      const request = new Request('https://emsinventory.dcvfd.org/api/items', {
+        method: 'GET',
+        headers: { Cookie: `ems_session=${sessionId}` },
+      });
+
+      await validateSession(request, env);
+
+      // Session should be destroyed
+      const afterValidation = await getSession(env, sessionId);
+      expect(afterValidation).toBeNull();
+    });
+
+    it('returns null for a malformed cookie value', async () => {
+      const env = createMockEnv();
+      const request = new Request('https://emsinventory.dcvfd.org/api/items', {
+        method: 'GET',
+        headers: { Cookie: 'ems_session=' },
+      });
+      const result = await validateSession(request, env);
+      expect(result).toBeNull();
     });
   });
 });

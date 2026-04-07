@@ -13,7 +13,9 @@ import { handleMagicLinkRequest, handleMagicLinkVerify } from './auth/magic-link
 import { handlePinAuth } from './auth/pin';
 import { handleAuthMe, handleAuthLogout } from './auth/handlers';
 import { requireAuth } from './middleware/auth';
+import type { Session } from './middleware/auth';
 import { requireRole } from './middleware/rbac';
+import type { UserRole } from '../shared/types';
 
 // ── CSRF Origin verification ────────────────────────────────────────
 const ALLOWED_ORIGINS = [
@@ -205,6 +207,29 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
     return handleUpdateOrder(request, env);
   }
 
+  // ── Users (admin only) ────────────────────────────────────────────
+  if (path === '/api/users' && method === 'GET') {
+    const session = await requireAuth(request, env);
+    if (session instanceof Response) return session;
+    const denied = requireRole(session, 'admin');
+    if (denied) return denied;
+    return handleGetUsers(request, env);
+  }
+  if (/^\/api\/users\/\d+\/role$/.test(path) && method === 'PUT') {
+    const session = await requireAuth(request, env);
+    if (session instanceof Response) return session;
+    const denied = requireRole(session, 'admin');
+    if (denied) return denied;
+    return handleUpdateUserRole(request, env, path, session);
+  }
+  if (/^\/api\/users\/\d+\/active$/.test(path) && method === 'PUT') {
+    const session = await requireAuth(request, env);
+    if (session instanceof Response) return session;
+    const denied = requireRole(session, 'admin');
+    if (denied) return denied;
+    return handleUpdateUserActive(request, env, path, session);
+  }
+
   // ── Static / fallback ─────────────────────────────────────────────
   if (!path.startsWith('/api/')) {
     // Serve static assets; fall back to index.html for SPA client-side routing
@@ -361,5 +386,195 @@ async function handleGetHistory(request: Request, env: Env): Promise<Response> {
   } catch (err) {
     console.error('[getHistory]', err);
     return serverError('Failed to get history');
+  }
+}
+
+// ── User management handlers (admin only) ─────────────────────────
+
+const VALID_ROLES: UserRole[] = ['crew', 'logistics', 'admin'];
+
+/**
+ * GET /api/users — list all users
+ * Query params: ?role=crew&active=true
+ */
+async function handleGetUsers(request: Request, env: Env): Promise<Response> {
+  try {
+    const url = new URL(request.url);
+    const roleFilter = url.searchParams.get('role');
+    const activeFilter = url.searchParams.get('active');
+
+    let sql = 'SELECT u.id, u.email, u.name, u.role, u.station_id, u.auth_method, u.is_active, u.created_at, u.updated_at, u.last_login_at, s.name AS station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id';
+    const conditions: string[] = [];
+    const bindings: unknown[] = [];
+
+    if (roleFilter && VALID_ROLES.includes(roleFilter as UserRole)) {
+      conditions.push('u.role = ?');
+      bindings.push(roleFilter);
+    }
+
+    if (activeFilter !== null && activeFilter !== undefined && activeFilter !== '') {
+      conditions.push('u.is_active = ?');
+      bindings.push(activeFilter === 'true' ? 1 : 0);
+    }
+
+    if (conditions.length > 0) {
+      sql += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    sql += ' ORDER BY u.name ASC';
+
+    let stmt = env.DB.prepare(sql);
+    if (bindings.length > 0) {
+      stmt = stmt.bind(...bindings);
+    }
+
+    const result = await stmt.all<{
+      id: number;
+      email: string | null;
+      name: string;
+      role: UserRole;
+      station_id: number | null;
+      auth_method: string | null;
+      is_active: number;
+      created_at: string;
+      updated_at: string;
+      last_login_at: string | null;
+      station_name: string | null;
+    }>();
+
+    const users = result.results.map((u) => ({
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      role: u.role,
+      station_id: u.station_id,
+      station_name: u.station_name,
+      auth_method: u.auth_method,
+      is_active: u.is_active === 1,
+      created_at: u.created_at,
+      updated_at: u.updated_at,
+      last_login_at: u.last_login_at,
+    }));
+
+    return ok({ users, count: users.length });
+  } catch (err) {
+    console.error('[getUsers]', err);
+    return serverError('Failed to get users');
+  }
+}
+
+/**
+ * PUT /api/users/:id/role — update a user's role
+ */
+async function handleUpdateUserRole(request: Request, env: Env, path: string, session: Session): Promise<Response> {
+  try {
+    const parts = path.split('/');
+    const userId = Number(parts[3]);
+    if (!userId || isNaN(userId)) return badRequest('Invalid user ID');
+
+    const body = await request.json<{ role?: string }>();
+    if (!body.role || !VALID_ROLES.includes(body.role as UserRole)) {
+      return badRequest(`Invalid role. Must be one of: ${VALID_ROLES.join(', ')}`);
+    }
+
+    // Cannot demote yourself
+    if (userId === session.userId) {
+      return badRequest('Cannot change your own role');
+    }
+
+    const user = await env.DB.prepare('SELECT id FROM users WHERE id = ?').bind(userId).first();
+    if (!user) return notFound(`User ${userId} not found`);
+
+    await env.DB
+      .prepare(`UPDATE users SET role = ?, updated_at = datetime('now') WHERE id = ?`)
+      .bind(body.role, userId)
+      .run();
+
+    const updated = await env.DB
+      .prepare('SELECT u.id, u.email, u.name, u.role, u.station_id, u.auth_method, u.is_active, u.created_at, u.updated_at, u.last_login_at, s.name AS station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE u.id = ?')
+      .bind(userId)
+      .first<{
+        id: number;
+        email: string | null;
+        name: string;
+        role: UserRole;
+        station_id: number | null;
+        auth_method: string | null;
+        is_active: number;
+        created_at: string;
+        updated_at: string;
+        last_login_at: string | null;
+        station_name: string | null;
+      }>();
+
+    return ok({
+      user: updated ? {
+        ...updated,
+        is_active: updated.is_active === 1,
+      } : null,
+    });
+  } catch (err) {
+    console.error('[updateUserRole]', err);
+    return serverError('Failed to update user role');
+  }
+}
+
+/**
+ * PUT /api/users/:id/active — activate/deactivate a user
+ */
+async function handleUpdateUserActive(request: Request, env: Env, path: string, session: Session): Promise<Response> {
+  try {
+    const parts = path.split('/');
+    const userId = Number(parts[3]);
+    if (!userId || isNaN(userId)) return badRequest('Invalid user ID');
+
+    const body = await request.json<{ is_active?: boolean }>();
+    if (typeof body.is_active !== 'boolean') {
+      return badRequest('is_active must be a boolean');
+    }
+
+    // Cannot deactivate yourself
+    if (userId === session.userId) {
+      return badRequest('Cannot change your own active status');
+    }
+
+    const user = await env.DB.prepare('SELECT id FROM users WHERE id = ?').bind(userId).first();
+    if (!user) return notFound(`User ${userId} not found`);
+
+    await env.DB
+      .prepare(`UPDATE users SET is_active = ?, updated_at = datetime('now') WHERE id = ?`)
+      .bind(body.is_active ? 1 : 0, userId)
+      .run();
+
+    // Note: When deactivating, the validateSession middleware in auth.ts
+    // will catch this on the user's next request and destroy their session.
+    // No need to manually iterate KV session keys.
+
+    const updated = await env.DB
+      .prepare('SELECT u.id, u.email, u.name, u.role, u.station_id, u.auth_method, u.is_active, u.created_at, u.updated_at, u.last_login_at, s.name AS station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE u.id = ?')
+      .bind(userId)
+      .first<{
+        id: number;
+        email: string | null;
+        name: string;
+        role: UserRole;
+        station_id: number | null;
+        auth_method: string | null;
+        is_active: number;
+        created_at: string;
+        updated_at: string;
+        last_login_at: string | null;
+        station_name: string | null;
+      }>();
+
+    return ok({
+      user: updated ? {
+        ...updated,
+        is_active: updated.is_active === 1,
+      } : null,
+    });
+  } catch (err) {
+    console.error('[updateUserActive]', err);
+    return serverError('Failed to update user status');
   }
 }
