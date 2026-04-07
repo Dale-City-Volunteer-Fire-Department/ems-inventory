@@ -20,20 +20,27 @@ export async function handleGetTemplate(request: Request, env: Env): Promise<Res
       return badRequest('Invalid station ID');
     }
 
-    const items = await getInventoryTemplate(env.DB, stationId);
-    if (items.length === 0) {
+    const rows = await getInventoryTemplate(env.DB, stationId);
+    if (rows.length === 0) {
       return notFound(`No items found for station ${stationId}`);
     }
 
-    // Group by category
-    const grouped: Record<string, typeof items> = {};
-    for (const item of items) {
-      const cat = item.category;
-      if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push(item);
-    }
+    // Map to the shape the frontend expects (InventoryItem)
+    const items = rows.map((r) => ({
+      id: 0,
+      item_id: r.item_id,
+      station_id: stationId,
+      target_count: r.target_count,
+      actual_count: null,
+      delta: null,
+      status: 'not_entered',
+      session_id: null,
+      name: r.item_name,
+      category: r.category,
+      sort_order: r.sort_order,
+    }));
 
-    return ok({ stationId, categories: grouped, totalItems: items.length });
+    return ok(items);
   } catch (err) {
     return serverError(err instanceof Error ? err.message : 'Failed to get template');
   }

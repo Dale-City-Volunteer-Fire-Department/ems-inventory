@@ -7,6 +7,7 @@ export interface AuthUser {
   name: string;
   email: string;
   stationId: number | null;
+  photoUrl: string | null;
 }
 
 interface AuthContextValue {
@@ -33,13 +34,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!cancelled) setUser(null);
           return;
         }
-        const data = (await res.json()) as { role?: UserRole; name?: string; email?: string | null; stationId?: number | null };
+        const data = (await res.json()) as { role?: UserRole; name?: string; email?: string | null; stationId?: number | null; photoUrl?: string | null };
         if (!cancelled && data.role) {
           setUser({
             role: data.role,
             name: data.name ?? '',
             email: data.email ?? '',
             stationId: data.stationId ?? null,
+            photoUrl: data.photoUrl ?? null,
           });
         }
       } catch {

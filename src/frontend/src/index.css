@@ -8,6 +8,17 @@
   --color-dcvfd-light: #1e4d44;
   --color-dcvfd-dark: #0f2924;
   --color-dcvfd-accent: #2a7a6c;
+  --color-surface: #111113;
+  --color-surface-raised: #18181b;
+  --color-surface-overlay: #1f1f23;
+  --color-border-subtle: #27272a;
+  --color-border-default: #3f3f46;
+}
+
+/* ── Base ──────────────────────────────────────────────────────── */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Force numeric keypad on iOS Safari */
@@ -15,7 +26,65 @@ input[inputmode='numeric'] {
   font-variant-numeric: tabular-nums;
 }
 
-/* Print styles for pick lists */
+/* ── Smooth transitions on interactive elements ────────────────── */
+button,
+a,
+select,
+input {
+  transition: all 0.15s ease;
+}
+
+/* ── Custom scrollbar (Webkit) ─────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+
+/* ── Glass card effect ─────────────────────────────────────────── */
+.glass {
+  background: rgba(24, 24, 27, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(63, 63, 70, 0.5);
+}
+
+/* ── Skeleton loading shimmer ──────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #27272a 25%, #3f3f46 50%, #27272a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite ease-in-out;
+  border-radius: 0.5rem;
+}
+
+/* ── Pulse dot for status indicators ───────────────────────────── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.pulse-dot {
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+/* ── Safe area for notched phones ──────────────────────────────── */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Print styles for pick lists ───────────────────────────────── */
 @media print {
   .no-print {
     display: none !important;

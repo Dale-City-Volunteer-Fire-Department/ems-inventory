@@ -15,10 +15,10 @@ const ROLE_RANK = { crew: 0, logistics: 1, admin: 2 } as const;
 
 function LoadingScreen() {
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-neutral-950 text-white">
+    <div className="min-h-dvh flex items-center justify-center bg-surface text-white">
       <div className="text-center">
-        <img src="/dcvfd-logo.svg" alt="DCVFD" className="h-16 w-auto mx-auto mb-4" />
-        <p className="text-neutral-400">Loading...</p>
+        <img src="/dcvfd-badge.svg" alt="DCVFD" className="h-16 w-auto mx-auto mb-4 animate-pulse" />
+        <p className="text-zinc-500 text-sm">Loading...</p>
       </div>
     </div>
   );

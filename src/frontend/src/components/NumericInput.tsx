@@ -33,7 +33,6 @@ export default function NumericInput({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFocus = useCallback(() => {
-    // Auto-select all text on focus so user can immediately type
     requestAnimationFrame(() => {
       inputRef.current?.select();
     });
@@ -55,12 +54,12 @@ export default function NumericInput({
   );
 
   // Determine border color based on delta from target
-  let borderClass = 'border-neutral-700 focus:border-dcvfd-accent';
+  let borderClass = 'border-border-default focus:border-dcvfd-accent focus:ring-1 focus:ring-dcvfd-accent/30';
   if (value !== null && value !== undefined && target !== undefined) {
     if (value >= target) {
-      borderClass = 'border-green-600 focus:border-green-500';
+      borderClass = 'border-ems-green/60 focus:border-ems-green focus:ring-1 focus:ring-ems-green/30';
     } else {
-      borderClass = 'border-red-600 focus:border-red-500';
+      borderClass = 'border-ems-red/60 focus:border-ems-red focus:ring-1 focus:ring-ems-red/30';
     }
   }
 
@@ -76,7 +75,7 @@ export default function NumericInput({
       placeholder={placeholder}
       disabled={disabled}
       aria-label={ariaLabel}
-      className={`w-16 min-h-[44px] rounded-lg border-2 bg-neutral-800 px-2 text-center text-lg font-mono text-white outline-none transition-colors ${borderClass} disabled:opacity-40`}
+      className={`w-16 min-h-[44px] rounded-lg border-2 bg-surface-overlay px-2 text-center text-lg font-mono text-white outline-none transition-all ${borderClass} disabled:opacity-40`}
     />
   );
 }

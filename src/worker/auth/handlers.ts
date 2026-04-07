@@ -22,6 +22,7 @@ export async function handleAuthMe(request: Request, env: Env): Promise<Response
     role: session.role,
     stationId: session.stationId,
     authMethod: session.authMethod,
+    photoUrl: session.photoUrl ?? null,
     expiresAt: session.expiresAt,
   });
 }
