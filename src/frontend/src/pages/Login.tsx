@@ -13,7 +13,7 @@ export default function Login() {
       className="min-h-dvh flex flex-col items-center justify-center text-white p-6 bg-cover bg-center bg-no-repeat relative"
       style={{ backgroundImage: "url('/login-bg.jpg')" }}
     >
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/50 pointer-events-none" />
       <div className="w-full max-w-sm flex flex-col items-center relative z-10">
         <img src="/dcvfd-logo.svg" alt="DCVFD" className="h-20 w-auto mb-4" />
         <h1 className="text-2xl font-bold mb-1">DCVFD EMS Inventory</h1>
