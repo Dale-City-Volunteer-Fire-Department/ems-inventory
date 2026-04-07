@@ -1,11 +1,8 @@
-import { useState, useEffect } from 'react';
-import { useAuth, type AuthUser } from '../hooks/useAuth';
+import { useState } from 'react';
 
-type Station = { id: number; name: string };
-type View = 'main' | 'pin' | 'magic-link';
+type View = 'main' | 'magic-link';
 
 export default function Login() {
-  const { login } = useAuth();
   const [view, setView] = useState<View>('main');
 
   return (
@@ -13,18 +10,22 @@ export default function Login() {
       className="min-h-dvh flex flex-col items-center justify-center text-white p-6 bg-cover bg-center bg-no-repeat relative"
       style={{ backgroundImage: "url('/login-bg.jpg')" }}
     >
-      <div className="absolute inset-0 bg-black/50 pointer-events-none" />
-      <div className="w-full max-w-sm flex flex-col items-center relative z-10">
-        <img src="/dcvfd-logo.svg" alt="DCVFD" className="h-20 w-auto mb-4" />
-        <h1 className="text-2xl font-bold mb-1">DCVFD EMS Inventory</h1>
-        <p className="text-neutral-400 text-sm mb-10">Dale City Volunteer Fire Department</p>
+      {/* Gradient overlay — dark bottom for legibility */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-black/80 pointer-events-none" />
 
-        {view === 'main' && <MainButtons onSelect={setView} />}
-        {view === 'pin' && <PinForm onBack={() => setView('main')} onLogin={login} />}
-        {view === 'magic-link' && <MagicLinkForm onBack={() => setView('main')} />}
+      <div className="w-full max-w-sm flex flex-col items-center relative z-10">
+        {/* Glass card */}
+        <div className="w-full glass rounded-2xl p-8 flex flex-col items-center shadow-2xl">
+          <img src="/dcvfd-badge.svg" alt="DCVFD" className="h-24 w-auto mb-5 drop-shadow-lg" />
+          <h1 className="text-2xl font-bold tracking-tight mb-0.5">EMS Inventory</h1>
+          <p className="text-zinc-400 text-sm mb-8">Dale City Volunteer Fire Department</p>
+
+          {view === 'main' && <MainButtons onSelect={setView} />}
+          {view === 'magic-link' && <MagicLinkForm onBack={() => setView('main')} />}
+        </div>
       </div>
 
-      <p className="absolute bottom-6 text-xs text-neutral-600 text-center z-10">
+      <p className="absolute bottom-6 text-xs text-zinc-600 text-center z-10">
         &copy; 2026 Dale City Volunteer Fire Department, Inc.
       </p>
     </div>
@@ -37,23 +38,29 @@ function MainButtons({ onSelect }: { onSelect: (v: View) => void }) {
       <a
         href="/api/auth/entra/login"
         onClick={(e) => { e.preventDefault(); window.location.href = '/api/auth/entra/login'; }}
-        className="flex w-full items-center justify-center gap-3 rounded-lg bg-dcvfd px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-dcvfd-light active:bg-dcvfd-dark min-h-[48px]"
+        className="group flex w-full items-center justify-center gap-3 rounded-xl bg-dcvfd px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-dcvfd/20 hover:bg-dcvfd-light hover:shadow-dcvfd/30 active:bg-dcvfd-dark active:scale-[0.98] min-h-[52px] transition-all"
       >
-        <svg width="20" height="20" viewBox="0 0 21 21" fill="none">
+        <svg width="20" height="20" viewBox="0 0 21 21" fill="none" className="shrink-0">
           <rect x="1" y="1" width="9" height="9" fill="#F25022" />
           <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
           <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
           <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
         </svg>
-        Sign in with Entra ID
+        <span>DCVFD Personnel</span>
       </a>
+
+      <div className="flex items-center gap-3 py-1">
+        <div className="flex-1 h-px bg-zinc-700" />
+        <span className="text-xs text-zinc-500 uppercase tracking-wider">or</span>
+        <div className="flex-1 h-px bg-zinc-700" />
+      </div>
 
       <button
         type="button"
         onClick={() => onSelect('magic-link')}
-        className="flex w-full items-center justify-center gap-3 rounded-lg bg-neutral-800 px-6 py-3.5 text-base font-semibold text-white border border-neutral-700 transition-colors hover:bg-neutral-750 active:bg-neutral-700 min-h-[48px]"
+        className="flex w-full items-center justify-center gap-3 rounded-xl bg-surface-overlay px-6 py-3.5 text-base font-semibold text-white border border-border-subtle hover:bg-zinc-800 hover:border-zinc-600 active:bg-zinc-700 active:scale-[0.98] min-h-[52px] transition-all"
       >
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-5 w-5 text-zinc-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -61,140 +68,10 @@ function MainButtons({ onSelect }: { onSelect: (v: View) => void }) {
             d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
           />
         </svg>
-        Magic Link
+        <span>PWC Employees</span>
       </button>
-
-      <button
-        type="button"
-        onClick={() => onSelect('pin')}
-        className="flex w-full items-center justify-center gap-3 rounded-lg bg-neutral-800 px-6 py-3.5 text-base font-semibold text-white border border-neutral-700 transition-colors hover:bg-neutral-750 active:bg-neutral-700 min-h-[48px]"
-      >
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-          />
-        </svg>
-        Station PIN
-      </button>
+      <p className="text-xs text-zinc-500 text-center">Prince William County staff &mdash; sign in via email link</p>
     </div>
-  );
-}
-
-const STATION_NAMES: Record<number, string> = {
-  10: 'The Dime',
-  13: 'Midtown',
-  18: 'Station 18',
-  20: 'Parkway Express',
-};
-
-function PinForm({ onBack, onLogin }: { onBack: () => void; onLogin: (user: AuthUser) => void }) {
-  const [stations, setStations] = useState<Station[]>([]);
-  const [selectedStation, setSelectedStation] = useState<number | null>(null);
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/stations')
-      .then((r) => r.json())
-      .then((data) => (data as { stations?: Station[] }))
-      .then((data) => {
-        if (data.stations) setStations(data.stations);
-      })
-      .catch(() => setError('Failed to load stations'));
-  }, []);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedStation) {
-      setError('Select a station');
-      return;
-    }
-    if (!pin) {
-      setError('Enter PIN');
-      return;
-    }
-    setError('');
-    setLoading(true);
-    try {
-      const res = await fetch('/api/auth/pin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ pin, stationId: selectedStation }),
-      });
-      const data = (await res.json()) as {
-        user?: { id: number; name: string; role: string; stationId: number };
-        error?: string;
-      };
-      if (!res.ok) {
-        setError(data.error ?? 'Invalid PIN');
-        return;
-      }
-      if (data.user) {
-        onLogin({
-          role: data.user.role as AuthUser['role'],
-          name: data.user.name,
-          email: '',
-          stationId: data.user.stationId,
-        });
-      }
-    } catch {
-      setError('Connection error — try again');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="w-full space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        {stations.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setSelectedStation(s.id)}
-            className={`flex flex-col items-center justify-center rounded-xl border-2 p-4 min-h-[80px] transition-all ${
-              selectedStation === s.id
-                ? 'border-dcvfd-accent bg-dcvfd/20 text-white'
-                : 'border-neutral-700 bg-neutral-800 text-neutral-300 hover:border-neutral-500'
-            }`}
-          >
-            <span className="text-2xl font-bold">{s.id}</span>
-            <span className="text-xs mt-0.5">{STATION_NAMES[s.id] ?? s.name}</span>
-          </button>
-        ))}
-      </div>
-
-      <input
-        type="tel"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        placeholder="Station PIN"
-        value={pin}
-        onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-        maxLength={8}
-        autoFocus
-        className="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-4 py-3.5 text-center text-2xl tracking-widest text-white placeholder:text-neutral-500 focus:border-dcvfd-accent focus:outline-none min-h-[56px]"
-      />
-
-      {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-
-      <button
-        type="submit"
-        disabled={loading || !selectedStation || !pin}
-        className="flex w-full items-center justify-center rounded-lg bg-dcvfd px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-dcvfd-light active:bg-dcvfd-dark disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px]"
-      >
-        {loading ? 'Signing in…' : 'Sign In'}
-      </button>
-
-      <button type="button" onClick={onBack} className="w-full text-sm text-neutral-500 hover:text-neutral-300 py-2">
-        ← Back
-      </button>
-    </form>
   );
 }
 
@@ -230,13 +107,19 @@ function MagicLinkForm({ onBack }: { onBack: () => void }) {
   if (sent) {
     return (
       <div className="w-full text-center space-y-4">
-        <div className="text-4xl">📬</div>
-        <p className="text-white font-semibold">Check your email</p>
-        <p className="text-neutral-400 text-sm">
-          A sign-in link was sent to <span className="text-white">{email}</span>
-        </p>
-        <button type="button" onClick={onBack} className="text-sm text-neutral-500 hover:text-neutral-300 py-2">
-          ← Back
+        <div className="mx-auto h-16 w-16 rounded-full bg-dcvfd/20 border border-dcvfd-accent/30 flex items-center justify-center">
+          <svg className="h-8 w-8 text-dcvfd-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div>
+          <p className="text-white font-semibold">Check your email</p>
+          <p className="text-zinc-400 text-sm mt-1">
+            A sign-in link was sent to <span className="text-white font-medium">{email}</span>
+          </p>
+        </div>
+        <button type="button" onClick={onBack} className="text-sm text-zinc-500 hover:text-zinc-300 py-2 transition-colors">
+          &larr; Back to sign in
         </button>
       </div>
     );
@@ -244,7 +127,7 @@ function MagicLinkForm({ onBack }: { onBack: () => void }) {
 
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-4">
-      <p className="text-neutral-400 text-sm text-center">Enter your email and we'll send a sign-in link.</p>
+      <p className="text-zinc-400 text-sm text-center">Enter your county email and we'll send a sign-in link.</p>
 
       <input
         type="email"
@@ -253,21 +136,29 @@ function MagicLinkForm({ onBack }: { onBack: () => void }) {
         onChange={(e) => setEmail(e.target.value)}
         autoFocus
         required
-        className="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-4 py-3.5 text-white placeholder:text-neutral-500 focus:border-dcvfd-accent focus:outline-none min-h-[48px]"
+        className="w-full rounded-xl bg-surface-overlay border border-border-subtle px-4 py-3.5 text-white placeholder:text-zinc-500 focus:border-dcvfd-accent focus:ring-1 focus:ring-dcvfd-accent/30 focus:outline-none min-h-[52px] transition-all"
       />
 
-      {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+      {error && (
+        <div className="rounded-lg bg-red-950/50 border border-red-900/50 px-3 py-2 text-sm text-red-300">
+          {error}
+        </div>
+      )}
 
       <button
         type="submit"
         disabled={loading || !email}
-        className="flex w-full items-center justify-center rounded-lg bg-dcvfd px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-dcvfd-light active:bg-dcvfd-dark disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px]"
+        className="flex w-full items-center justify-center rounded-xl bg-dcvfd px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-dcvfd/20 hover:bg-dcvfd-light active:bg-dcvfd-dark active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none min-h-[52px] transition-all"
       >
-        {loading ? 'Sending…' : 'Send Link'}
+        {loading ? (
+          <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        ) : (
+          'Send Link'
+        )}
       </button>
 
-      <button type="button" onClick={onBack} className="w-full text-sm text-neutral-500 hover:text-neutral-300 py-2">
-        ← Back
+      <button type="button" onClick={onBack} className="w-full text-sm text-zinc-500 hover:text-zinc-300 py-2 transition-colors">
+        &larr; Back to sign in
       </button>
     </form>
   );

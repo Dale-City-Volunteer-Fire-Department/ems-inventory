@@ -53,9 +53,9 @@ export function useStationsApi() {
     let cancelled = false;
     setLoading(true);
     fetch('/api/stations')
-      .then((r) => r.json() as Promise<Station[]>)
+      .then((r) => r.json() as Promise<{ stations: Station[] }>)
       .then((data) => {
-        if (!cancelled) setStations(data);
+        if (!cancelled) setStations(data.stations);
       })
       .catch(() => {
         // Fall back to defaults

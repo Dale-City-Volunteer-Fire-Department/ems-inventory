@@ -66,7 +66,7 @@ export async function handleEntraLogin(_request: Request, env: Env): Promise<Res
       client_id: clientId,
       response_type: 'code',
       redirect_uri: redirectUri,
-      scope: 'openid profile email',
+      scope: 'openid profile email User.Read',
       state,
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
@@ -118,6 +118,7 @@ export async function handleEntraCallback(request: Request, env: Env): Promise<R
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         client_id: env.AZURE_AD_CLIENT_ID,
+        client_secret: env.AZURE_AD_CLIENT_SECRET,
         grant_type: 'authorization_code',
         code,
         redirect_uri: redirectUri,
@@ -151,6 +152,24 @@ export async function handleEntraCallback(request: Request, env: Env): Promise<R
       return forbidden('Account not authorized for this application');
     }
 
+    // Fetch profile photo from Microsoft Graph (best-effort)
+    let photoUrl: string | null = null;
+    try {
+      const photoResponse = await fetch('https://graph.microsoft.com/v1.0/me/photo/$value', {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+      if (photoResponse.ok) {
+        const photoBuffer = await photoResponse.arrayBuffer();
+        const contentType = photoResponse.headers.get('Content-Type') ?? 'image/jpeg';
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(photoBuffer)));
+        photoUrl = `data:${contentType};base64,${base64}`;
+        // Cache photo in KV (24h TTL) keyed by email
+        await env.SESSIONS.put(`photo:${email}`, photoUrl, { expirationTtl: 86400 });
+      }
+    } catch (err) {
+      console.error('[entra] Photo fetch failed (non-fatal):', err);
+    }
+
     // Create/update user (returns null when the account is deactivated)
     const user = await upsertUser(env.DB, {
       email,
@@ -170,6 +189,7 @@ export async function handleEntraCallback(request: Request, env: Env): Promise<R
       role: user.role,
       stationId: user.stationId,
       authMethod: 'entra_sso',
+      photoUrl,
     });
 
     // Update last_login_at

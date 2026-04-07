@@ -25,7 +25,7 @@ interface NavBarProps {
 }
 
 function NavIcon({ icon, active }: { icon: string; active: boolean }) {
-  const cls = `h-6 w-6 ${active ? 'text-dcvfd-accent' : 'text-neutral-500'}`;
+  const cls = `h-6 w-6 transition-colors ${active ? 'text-dcvfd-accent' : 'text-zinc-500'}`;
   switch (icon) {
     case 'clipboard':
       return (
@@ -33,7 +33,7 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth={2}
+            strokeWidth={1.75}
             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
           />
         </svg>
@@ -44,7 +44,7 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth={2}
+            strokeWidth={1.75}
             d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
           />
         </svg>
@@ -55,10 +55,10 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth={2}
+            strokeWidth={1.75}
             d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
           />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       );
     default:
@@ -77,7 +77,7 @@ export default function NavBar({ role }: NavBarProps) {
   });
 
   return (
-    <nav className="no-print fixed bottom-0 left-0 right-0 z-40 border-t border-neutral-800 bg-neutral-900/95 backdrop-blur-sm safe-area-pb md:hidden">
+    <nav className="no-print fixed bottom-0 left-0 right-0 z-40 border-t border-border-subtle bg-surface/95 backdrop-blur-md safe-area-pb md:hidden">
       <div className="flex justify-around py-2">
         {visibleItems.map((item) => {
           const active = location.pathname.startsWith(item.path);
@@ -86,12 +86,12 @@ export default function NavBar({ role }: NavBarProps) {
               key={item.path}
               type="button"
               onClick={() => navigate(item.path)}
-              className={`flex min-w-[64px] flex-col items-center gap-0.5 px-3 py-1 ${
+              className={`flex min-w-[64px] flex-col items-center gap-0.5 px-3 py-1 transition-all ${
                 active ? 'border-t-2 border-dcvfd-accent -mt-[2px]' : ''
               }`}
             >
               <NavIcon icon={item.icon} active={active} />
-              <span className={`text-xs ${active ? 'text-dcvfd-accent font-medium' : 'text-neutral-500'}`}>
+              <span className={`text-xs transition-colors ${active ? 'text-dcvfd-accent font-medium' : 'text-zinc-500'}`}>
                 {item.label}
               </span>
             </button>

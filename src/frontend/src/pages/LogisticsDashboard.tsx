@@ -61,7 +61,6 @@ export default function LogisticsDashboard() {
       const newStatus: OrderStatus = action === 'start' ? 'in_progress' : 'filled';
       const filledBy = action === 'fill' ? user?.name ?? 'Unknown' : undefined;
 
-      // Optimistic update
       setOrders((prev) =>
         prev.map((o) =>
           o.id === orderId
@@ -83,12 +82,11 @@ export default function LogisticsDashboard() {
           body: { orderId, status: newStatus, ...(filledBy ? { filledBy } : {}) },
         });
       } catch {
-        // Revert on error -- re-fetch orders
         try {
-          const refreshed = await apiFetch<Order[]>('/orders');
-          setOrders(refreshed);
+          const data = await apiFetch<{ orders: Order[]; count: number }>('/orders');
+          setOrders(data.orders);
         } catch {
-          // If refresh also fails, leave the optimistic state
+          // leave optimistic state
         }
       } finally {
         setActionLoading(null);
@@ -98,7 +96,6 @@ export default function LogisticsDashboard() {
   );
 
   useEffect(() => {
-    // Load station summaries from API
     setLoading(true);
     Promise.all(
       stations.map(async (s) => {
@@ -121,8 +118,8 @@ export default function LogisticsDashboard() {
   }, [stations]);
 
   useEffect(() => {
-    apiFetch<Order[]>('/orders')
-      .then(setOrders)
+    apiFetch<{ orders: Order[]; count: number }>('/orders')
+      .then((data) => setOrders(data.orders))
       .catch(() => setOrders([]));
   }, []);
 
@@ -134,7 +131,7 @@ export default function LogisticsDashboard() {
         stationId: s.stationId,
       })),
     )
-    .sort((a, b) => a.delta - b.delta); // Most severe first (most negative delta)
+    .sort((a, b) => a.delta - b.delta);
 
   const selectedSummary = selectedStationId ? summaries.find((s) => s.stationId === selectedStationId) : null;
 
@@ -148,31 +145,39 @@ export default function LogisticsDashboard() {
       }))
     : [];
 
-  const tabs: { id: Tab; label: string }[] = [
+  const tabs: { id: Tab; label: string; count?: number }[] = [
     { id: 'overview', label: 'Overview' },
-    { id: 'shortages', label: 'Shortages' },
+    { id: 'shortages', label: 'Shortages', count: allShortages.length },
     { id: 'picklist', label: 'Pick List' },
-    { id: 'orders', label: 'Orders' },
+    { id: 'orders', label: 'Orders', count: orders.filter((o) => o.status !== 'filled').length },
   ];
 
   return (
-    <div className="min-h-dvh bg-neutral-950 text-white pb-20 md:pb-6">
-      <div className="px-4 py-4 border-b border-neutral-800">
+    <div className="min-h-dvh bg-surface text-white pb-20 md:pb-6">
+      <div className="px-4 py-4 border-b border-border-subtle">
         <h1 className="text-xl font-bold">Logistics Dashboard</h1>
+        <p className="text-zinc-500 text-sm mt-0.5">Station inventory overview and resupply orders</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-neutral-800 overflow-x-auto no-print">
+      <div className="flex border-b border-border-subtle overflow-x-auto no-print">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`shrink-0 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              tab === t.id ? 'border-dcvfd-accent text-dcvfd-accent' : 'border-transparent text-neutral-400 hover:text-white'
+            className={`shrink-0 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${
+              tab === t.id ? 'border-dcvfd-accent text-dcvfd-accent' : 'border-transparent text-zinc-400 hover:text-white'
             }`}
           >
             {t.label}
+            {t.count !== undefined && t.count > 0 && (
+              <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs ${
+                tab === t.id ? 'bg-dcvfd-accent/20 text-dcvfd-accent' : 'bg-zinc-800 text-zinc-500'
+              }`}>
+                {t.count}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -204,12 +209,11 @@ export default function LogisticsDashboard() {
 
         {!loading && tab === 'shortages' && (
           <div>
-            {/* Station filter */}
             <div className="mb-4">
               <select
                 value={selectedStationId ?? ''}
                 onChange={(e) => setSelectedStationId(e.target.value ? Number(e.target.value) : null)}
-                className="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2.5 text-white text-sm"
+                className="w-full rounded-xl bg-surface-raised border border-border-subtle px-3 py-2.5 text-white text-sm focus:border-dcvfd-accent focus:outline-none transition-colors"
               >
                 <option value="">All Stations</option>
                 {stations.map((s) => (
@@ -221,24 +225,24 @@ export default function LogisticsDashboard() {
             </div>
 
             {allShortages.length === 0 ? (
-              <p className="text-center text-neutral-500 py-8">No shortages found</p>
+              <EmptyState icon="check" message="No shortages found" subtitle="All stations are fully stocked" />
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {(selectedStationId ? allShortages.filter((s) => s.stationId === selectedStationId) : allShortages).map(
                   (item, i) => (
                     <div
                       key={`${item.stationId}-${item.itemName}-${i}`}
-                      className="flex items-center justify-between rounded-lg bg-neutral-800 px-4 py-3"
+                      className="flex items-center justify-between rounded-xl bg-surface-raised border border-border-subtle px-4 py-3 hover:border-zinc-600 transition-colors"
                     >
                       <div>
                         <span className="text-sm text-white">{item.itemName}</span>
-                        <span className="ml-2 text-xs text-neutral-500">{item.stationName}</span>
+                        <span className="ml-2 text-xs text-zinc-500">{item.stationName}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-neutral-500">
+                        <span className="text-xs text-zinc-500 font-mono">
                           {item.actual}/{item.target}
                         </span>
-                        <span className="rounded bg-red-900/80 px-2 py-0.5 text-xs font-mono font-bold text-red-300">
+                        <span className="rounded-md bg-ems-red/15 border border-ems-red/20 px-2 py-0.5 text-xs font-mono font-bold text-ems-red">
                           {item.delta}
                         </span>
                       </div>
@@ -256,7 +260,7 @@ export default function LogisticsDashboard() {
               <select
                 value={selectedStationId ?? ''}
                 onChange={(e) => setSelectedStationId(e.target.value ? Number(e.target.value) : null)}
-                className="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2.5 text-white text-sm"
+                className="w-full rounded-xl bg-surface-raised border border-border-subtle px-3 py-2.5 text-white text-sm focus:border-dcvfd-accent focus:outline-none transition-colors"
               >
                 <option value="">Select station...</option>
                 {stations.map((s) => (
@@ -273,7 +277,7 @@ export default function LogisticsDashboard() {
                   <button
                     type="button"
                     onClick={() => window.print()}
-                    className="rounded-lg bg-neutral-800 border border-neutral-700 px-4 py-2 text-sm text-white hover:bg-neutral-700"
+                    className="rounded-xl bg-surface-raised border border-border-subtle px-4 py-2 text-sm text-white hover:bg-surface-overlay transition-colors"
                   >
                     Print Pick List
                   </button>
@@ -285,16 +289,15 @@ export default function LogisticsDashboard() {
                 />
               </>
             ) : selectedStationId ? (
-              <p className="text-center text-neutral-500 py-8">No shortages for this station</p>
+              <EmptyState icon="check" message="No shortages" subtitle="This station is fully stocked" />
             ) : (
-              <p className="text-center text-neutral-500 py-8">Select a station to generate pick list</p>
+              <EmptyState icon="list" message="Select a station" subtitle="Generate a pick list for resupply" />
             )}
           </div>
         )}
 
         {!loading && tab === 'orders' && (
           <div>
-            {/* Status filter buttons */}
             <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
               {([
                 { key: 'all', label: 'All' },
@@ -306,10 +309,10 @@ export default function LogisticsDashboard() {
                   key={f.key}
                   type="button"
                   onClick={() => setStatusFilter(f.key)}
-                  className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
                     statusFilter === f.key
-                      ? 'bg-dcvfd-accent text-white'
-                      : 'bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-700'
+                      ? 'bg-dcvfd-accent text-white shadow-sm'
+                      : 'bg-surface-raised text-zinc-400 hover:text-white border border-border-subtle'
                   }`}
                 >
                   {f.label}
@@ -328,16 +331,18 @@ export default function LogisticsDashboard() {
 
               if (filtered.length === 0) {
                 return (
-                  <p className="text-center text-neutral-500 py-8">
-                    {statusFilter === 'all' ? 'No orders found' : `No ${statusFilter.replace('_', ' ')} orders`}
-                  </p>
+                  <EmptyState
+                    icon="inbox"
+                    message={statusFilter === 'all' ? 'No orders yet' : `No ${statusFilter.replace('_', ' ')} orders`}
+                    subtitle="Orders are created automatically when shortages are detected"
+                  />
                 );
               }
 
               const statusColors: Record<string, string> = {
-                pending: 'bg-amber-900/80 text-amber-300',
-                in_progress: 'bg-blue-900/80 text-blue-300',
-                filled: 'bg-green-900/80 text-green-300',
+                pending: 'bg-ems-amber/15 text-ems-amber border border-ems-amber/20',
+                in_progress: 'bg-blue-500/15 text-blue-400 border border-blue-500/20',
+                filled: 'bg-ems-green/15 text-ems-green border border-ems-green/20',
               };
 
               return (
@@ -347,15 +352,14 @@ export default function LogisticsDashboard() {
                     const isActionLoading = actionLoading === order.id;
 
                     return (
-                      <div key={order.id} className="rounded-xl bg-neutral-800 p-4 border border-neutral-700">
-                        {/* Header row: station name + status badge */}
+                      <div key={order.id} className="rounded-2xl bg-surface-raised p-4 border border-border-subtle">
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <p className="text-sm font-medium text-white">
                               {stationNameMap.get(order.station_id) ?? `Station ${order.station_id}`}
                             </p>
-                            <p className="text-xs text-neutral-500">
-                              Submitted {new Date(order.submitted_at).toLocaleDateString()}{' '}
+                            <p className="text-xs text-zinc-500 mt-0.5">
+                              {new Date(order.submitted_at).toLocaleDateString()}{' '}
                               {new Date(order.submitted_at).toLocaleTimeString([], {
                                 hour: '2-digit',
                                 minute: '2-digit',
@@ -369,15 +373,13 @@ export default function LogisticsDashboard() {
                           </span>
                         </div>
 
-                        {/* Items short count */}
-                        <p className="text-sm text-neutral-400 mb-3">
+                        <p className="text-sm text-zinc-400 mb-3">
                           {order.items_short} item{order.items_short !== 1 ? 's' : ''} short
                         </p>
 
-                        {/* Filled info (when applicable) */}
                         {order.status === 'filled' && (order.filled_by || order.filled_at) && (
-                          <div className="mb-3 rounded-lg bg-green-950/30 border border-green-900/40 px-3 py-2">
-                            <p className="text-xs text-green-400">
+                          <div className="mb-3 rounded-xl bg-ems-green/5 border border-ems-green/15 px-3 py-2">
+                            <p className="text-xs text-ems-green">
                               {order.filled_by && <>Filled by {order.filled_by}</>}
                               {order.filled_by && order.filled_at && ' — '}
                               {order.filled_at && (
@@ -393,31 +395,29 @@ export default function LogisticsDashboard() {
                           </div>
                         )}
 
-                        {/* Pick list toggle */}
                         {order.pick_list && (
                           <div className="mb-3">
                             <button
                               type="button"
                               onClick={() => togglePickList(order.id)}
-                              className="text-xs text-dcvfd-accent hover:text-dcvfd-accent/80 transition-colors"
+                              className="text-xs text-dcvfd-accent hover:text-dcvfd-accent/80 transition-colors font-medium"
                             >
                               {isExpanded ? 'Hide Pick List' : 'View Pick List'}
                             </button>
                             {isExpanded && (
-                              <pre className="mt-2 rounded-lg bg-neutral-900 border border-neutral-700 px-3 py-2 text-xs text-neutral-300 whitespace-pre-wrap font-mono overflow-x-auto max-h-64 overflow-y-auto">
+                              <pre className="mt-2 rounded-xl bg-surface border border-border-subtle px-3 py-2 text-xs text-zinc-300 whitespace-pre-wrap font-mono overflow-x-auto max-h-64 overflow-y-auto">
                                 {order.pick_list}
                               </pre>
                             )}
                           </div>
                         )}
 
-                        {/* Action buttons */}
                         {order.status === 'pending' && (
                           <button
                             type="button"
                             disabled={isActionLoading}
                             onClick={() => setConfirmModal({ orderId: order.id, action: 'start' })}
-                            className="w-full rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm font-medium text-white transition-colors"
+                            className="w-full rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-sm font-medium text-white transition-all active:scale-[0.98]"
                           >
                             {isActionLoading ? 'Updating...' : 'Start Fulfilling'}
                           </button>
@@ -427,7 +427,7 @@ export default function LogisticsDashboard() {
                             type="button"
                             disabled={isActionLoading}
                             onClick={() => setConfirmModal({ orderId: order.id, action: 'fill' })}
-                            className="w-full rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm font-medium text-white transition-colors"
+                            className="w-full rounded-xl bg-ems-green hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-sm font-medium text-white transition-all active:scale-[0.98]"
                           >
                             {isActionLoading ? 'Updating...' : 'Mark Filled'}
                           </button>
@@ -442,41 +442,71 @@ export default function LogisticsDashboard() {
         )}
       </div>
 
-      {/* Confirmation modal */}
       <Modal open={confirmModal !== null} onClose={() => setConfirmModal(null)}>
         {confirmModal && (
           <div>
-            <h2 className="text-lg font-semibold text-white mb-2">
-              {confirmModal.action === 'start' ? 'Start Fulfilling Order?' : 'Mark Order as Filled?'}
-            </h2>
-            <p className="text-sm text-neutral-400 mb-6">
+            <div className="text-center mb-4">
+              <div className={`mx-auto h-12 w-12 rounded-full flex items-center justify-center mb-3 ${
+                confirmModal.action === 'start' ? 'bg-blue-500/20' : 'bg-ems-green/20'
+              }`}>
+                <svg className={`h-6 w-6 ${confirmModal.action === 'start' ? 'text-blue-400' : 'text-ems-green'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={
+                    confirmModal.action === 'start' ? 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z' : 'M5 13l4 4L19 7'
+                  } />
+                </svg>
+              </div>
+              <h2 className="text-lg font-semibold text-white">
+                {confirmModal.action === 'start' ? 'Start Fulfilling?' : 'Mark as Filled?'}
+              </h2>
+            </div>
+            <p className="text-sm text-zinc-400 text-center mb-5">
               {confirmModal.action === 'start'
-                ? 'This will mark the order as in progress. Other team members will see that someone is working on it.'
+                ? 'This will mark the order as in progress.'
                 : `This will mark the order as filled by ${user?.name ?? 'you'}.`}
             </p>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => setConfirmModal(null)}
-                className="flex-1 rounded-lg bg-neutral-700 hover:bg-neutral-600 px-4 py-2 text-sm font-medium text-white transition-colors"
+                className="flex-1 rounded-xl bg-surface-overlay border border-border-subtle px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 active:scale-[0.98] transition-all"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => handleStatusTransition(confirmModal.orderId, confirmModal.action)}
-                className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors ${
+                className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-medium text-white active:scale-[0.98] transition-all ${
                   confirmModal.action === 'start'
                     ? 'bg-blue-600 hover:bg-blue-500'
-                    : 'bg-green-600 hover:bg-green-500'
+                    : 'bg-ems-green hover:bg-green-500'
                 }`}
               >
-                {confirmModal.action === 'start' ? 'Start Fulfilling' : 'Mark Filled'}
+                {confirmModal.action === 'start' ? 'Start' : 'Mark Filled'}
               </button>
             </div>
           </div>
         )}
       </Modal>
+    </div>
+  );
+}
+
+function EmptyState({ icon, message, subtitle }: { icon: string; message: string; subtitle?: string }) {
+  const iconPath = {
+    check: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+    list: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
+    inbox: 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4',
+  }[icon] ?? '';
+
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="h-14 w-14 rounded-2xl bg-surface-raised border border-border-subtle flex items-center justify-center mb-4">
+        <svg className="h-7 w-7 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={iconPath} />
+        </svg>
+      </div>
+      <p className="text-zinc-400 font-medium">{message}</p>
+      {subtitle && <p className="text-zinc-600 text-sm mt-1">{subtitle}</p>}
     </div>
   );
 }

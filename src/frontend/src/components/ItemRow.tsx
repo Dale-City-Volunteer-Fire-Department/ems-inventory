@@ -15,22 +15,24 @@ export default function ItemRow({ name, targetCount, value, onChange }: ItemRowP
     const delta = value - targetCount;
     if (delta >= 0) {
       deltaLabel = delta === 0 ? 'OK' : `+${delta}`;
-      deltaColor = 'text-green-400';
+      deltaColor = 'text-ems-green';
     } else {
       deltaLabel = String(delta);
-      deltaColor = 'text-red-400';
+      deltaColor = 'text-ems-red';
     }
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 min-h-[48px]">
+    <div className="flex items-center gap-3 px-4 py-2.5 min-h-[48px] hover:bg-surface-overlay/50 transition-colors">
       <div className="flex-1 min-w-0">
         <span className="text-sm text-white truncate block">{name}</span>
       </div>
-      <span className="shrink-0 rounded bg-neutral-700 px-2 py-0.5 text-xs font-mono text-neutral-400">
+      <span className="shrink-0 rounded-md bg-zinc-800 px-2 py-0.5 text-xs font-mono text-zinc-500 border border-border-subtle">
         {targetCount}
       </span>
-      {deltaLabel && <span className={`shrink-0 w-8 text-xs font-mono text-right ${deltaColor}`}>{deltaLabel}</span>}
+      {deltaLabel && (
+        <span className={`shrink-0 w-8 text-xs font-mono text-right font-medium ${deltaColor}`}>{deltaLabel}</span>
+      )}
       <NumericInput value={value} onChange={onChange} target={targetCount} aria-label={`Count for ${name}`} />
     </div>
   );

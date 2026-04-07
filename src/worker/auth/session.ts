@@ -10,6 +10,7 @@ export interface Session {
   role: UserRole;
   stationId: number | null;
   authMethod: 'entra_sso' | 'magic_link' | 'pin';
+  photoUrl?: string | null;
   expiresAt: string; // ISO timestamp
 }
 
