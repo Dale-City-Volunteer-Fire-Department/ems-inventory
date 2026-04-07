@@ -36,6 +36,7 @@ function MainButtons({ onSelect }: { onSelect: (v: View) => void }) {
     <div className="w-full space-y-3">
       <a
         href="/api/auth/entra/login"
+        onClick={(e) => { e.preventDefault(); window.location.href = '/api/auth/entra/login'; }}
         className="flex w-full items-center justify-center gap-3 rounded-lg bg-dcvfd px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-dcvfd-light active:bg-dcvfd-dark min-h-[48px]"
       >
         <svg width="20" height="20" viewBox="0 0 21 21" fill="none">
