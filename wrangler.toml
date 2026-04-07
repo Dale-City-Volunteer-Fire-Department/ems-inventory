@@ -31,4 +31,4 @@ id = "37a2d67b1b564b548c882fca5140f3d9"
 [assets]
 directory = "./dist"
 binding = "ASSETS"
-not_found_handling = "single-page-application"
+not_found_handling = "none"
