@@ -16,36 +16,17 @@ The core UX requirement is single-tap numeric inputs on mobile devices. Every UI
 
 ## Screenshots
 
-### Login
+> Screenshots are captured from the production deployment at emsinventory.dcvfd.org.
+> To add screenshots, place images in `docs/` and reference them as `![Page Name](docs/screenshot-name.png)`.
 
-```
-[Screenshot: Login page with glass-morphism card, DCVFD badge, two auth buttons —
- "Sign in with DCVFD Account" (Entra SSO) and "Sign in with Email" (magic link)]
-```
-
-### Inventory Form
-
-```
-[Screenshot: Mobile inventory form showing station header, category groups
- (Airway, Breathing, Circulation, etc.) with collapsible sections, and
- single-tap numeric input controls for each supply item]
-```
-
-### Dashboard
-
-```
-[Screenshot: Station health cards with freshness indicators showing time since
- last count, category shortage bar charts, order pipeline summary (pending /
- in progress / filled), and recent activity feed]
-```
-
-### PAR Management
-
-```
-[Screenshot: Two-column grid with item catalog on the left and per-station
- PAR level targets on the right, inline editing for target counts, category
- filter tabs, and item CRUD controls]
-```
+| Page | Description |
+|------|-------------|
+| Login | Glass-morphism card with DCVFD badge, Entra SSO and Magic Link buttons |
+| Inventory Form | Mobile-optimized category groups with single-tap numeric inputs |
+| Dashboard | Station health cards with freshness indicators, category shortage bars, order pipeline |
+| PAR Management | Two-column category grid with inline PAR editing across 4 stations |
+| Inventories | Expandable session history with per-item detail view |
+| Orders | Pick list cards with status workflow (pending, in progress, filled) |
 
 ---
 
