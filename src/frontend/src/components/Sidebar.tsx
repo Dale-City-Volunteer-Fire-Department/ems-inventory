@@ -63,7 +63,7 @@ function SidebarIcon({ icon, active, prominent }: { icon: string; active: boolea
     case 'list':
       return (
         <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
         </svg>
       );
     case 'truck':
@@ -140,7 +140,7 @@ export default function Sidebar({ role, userName, onProfileClick, collapsed = fa
       <button
         type="button"
         onClick={onToggleCollapse}
-        className="absolute top-1/2 -right-3 z-40 h-6 w-6 -translate-y-1/2 rounded-full bg-surface-raised border border-border-subtle flex items-center justify-center hover:bg-surface-overlay transition-colors shadow-sm"
+        className="absolute top-1/2 -right-3 z-40 h-6 w-6 -translate-y-1/2 rounded-full bg-[#0a1f1c] border border-dcvfd-dark flex items-center justify-center hover:bg-dcvfd-dark transition-colors shadow-sm"
         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         <svg
