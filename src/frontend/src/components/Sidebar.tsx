@@ -29,6 +29,8 @@ interface SidebarProps {
   role: UserRole;
   userName?: string;
   onProfileClick?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 function SidebarIcon({ icon, active, prominent }: { icon: string; active: boolean; prominent?: boolean }) {
@@ -117,7 +119,7 @@ export function UserAvatar({ name, photoUrl, size = 'md' }: { name: string; phot
   );
 }
 
-export default function Sidebar({ role, userName, onProfileClick }: SidebarProps) {
+export default function Sidebar({ role, userName, onProfileClick, collapsed = false, onToggleCollapse }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -129,14 +131,39 @@ export default function Sidebar({ role, userName, onProfileClick }: SidebarProps
   });
 
   return (
-    <aside className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 bg-dcvfd-dark z-30 border-r border-dcvfd/50">
+    <aside
+      className={`hidden md:flex md:flex-col md:fixed md:inset-y-0 bg-dcvfd-dark z-30 border-r border-dcvfd/50 relative transition-all duration-200 ${
+        collapsed ? 'md:w-16' : 'md:w-64'
+      }`}
+    >
+      {/* Collapse toggle button */}
+      <button
+        type="button"
+        onClick={onToggleCollapse}
+        className="absolute top-1/2 -right-3 z-40 h-6 w-6 -translate-y-1/2 rounded-full bg-surface-raised border border-border-subtle flex items-center justify-center hover:bg-surface-overlay transition-colors shadow-sm"
+        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        <svg
+          className={`h-3 w-3 text-zinc-400 transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
       {/* Logo */}
       <div className="flex items-center justify-center px-5 py-5 border-b border-dcvfd/40">
-        <img src="/dcvfd-logo-wide.svg" alt="DCVFD" className="h-10 w-auto" />
+        {collapsed ? (
+          <img src="/dcvfd-badge.svg" alt="DCVFD" className="h-8 w-8" />
+        ) : (
+          <img src="/dcvfd-logo-wide.svg" alt="DCVFD" className="h-10 w-auto" />
+        )}
       </div>
 
       {/* Nav Links */}
-      <nav className="flex-1 px-3 py-2 space-y-1">
+      <nav className={`flex-1 py-2 space-y-1 ${collapsed ? 'px-1.5' : 'px-3'}`}>
         {visibleItems.map((item) => {
           const active = location.pathname.startsWith(item.path);
           if (item.prominent) {
@@ -145,16 +172,19 @@ export default function Sidebar({ role, userName, onProfileClick }: SidebarProps
                 key={item.path}
                 type="button"
                 onClick={() => navigate(item.path)}
-                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all mb-2 ${
+                title={collapsed ? item.label : undefined}
+                className={`group flex w-full items-center rounded-lg text-sm font-semibold transition-all mb-2 ${
+                  collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5'
+                } ${
                   active
                     ? 'bg-dcvfd-accent text-white shadow-md shadow-dcvfd-accent/25'
                     : 'bg-dcvfd-accent/90 text-white hover:bg-dcvfd-accent hover:shadow-md hover:shadow-dcvfd-accent/25'
                 }`}
               >
-                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-5 w-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                {item.label}
+                {!collapsed && item.label}
               </button>
             );
           }
@@ -163,32 +193,40 @@ export default function Sidebar({ role, userName, onProfileClick }: SidebarProps
               key={item.path}
               type="button"
               onClick={() => navigate(item.path)}
-              className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+              title={collapsed ? item.label : undefined}
+              className={`group flex w-full items-center rounded-lg text-sm font-medium transition-all ${
+                collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5'
+              } ${
                 active
                   ? 'bg-dcvfd-light text-white shadow-sm'
                   : 'text-zinc-300 hover:bg-dcvfd/40 hover:text-white'
               }`}
             >
               <SidebarIcon icon={item.icon} active={active} />
-              {item.label}
-              {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-dcvfd-accent pulse-dot" />}
+              {!collapsed && item.label}
+              {!collapsed && active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-dcvfd-accent pulse-dot" />}
             </button>
           );
         })}
       </nav>
 
       {/* User info at bottom */}
-      <div className="border-t border-dcvfd/40 p-3">
+      <div className={`border-t border-dcvfd/40 ${collapsed ? 'p-1.5' : 'p-3'}`}>
         <button
           type="button"
           onClick={onProfileClick}
-          className="w-full flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-dcvfd/40 transition-colors text-left"
+          title={collapsed ? (userName ?? 'User') : undefined}
+          className={`w-full flex items-center rounded-lg py-2 hover:bg-dcvfd/40 transition-colors ${
+            collapsed ? 'justify-center px-0' : 'gap-3 px-2 text-left'
+          }`}
         >
           <UserAvatar name={userName ?? 'User'} photoUrl={user?.photoUrl} />
-          <div className="min-w-0 flex-1">
-            <div className="text-sm text-white font-medium truncate">{userName ?? 'User'}</div>
-            <div className="text-xs text-dcvfd-accent capitalize">{role}</div>
-          </div>
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <div className="text-sm text-white font-medium truncate">{userName ?? 'User'}</div>
+              <div className="text-xs text-dcvfd-accent capitalize">{role}</div>
+            </div>
+          )}
         </button>
       </div>
     </aside>
