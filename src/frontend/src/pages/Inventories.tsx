@@ -17,6 +17,7 @@ export default function Inventories() {
   const { stations } = useStations();
   const [sessions, setSessions] = useState<InventorySession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [stationFilter, setStationFilter] = useState<number | null>(null);
   const [expandedSession, setExpandedSession] = useState<number | null>(null);
   const [sessionItems, setSessionItems] = useState<Record<number, InventoryHistory[]>>({});
@@ -28,11 +29,15 @@ export default function Inventories() {
     const params = new URLSearchParams();
     if (stationFilter) params.set('stationId', String(stationFilter));
 
+    setError(null);
     apiFetch<{ sessions: InventorySession[]; count: number }>(
       `/inventory/sessions${params.toString() ? `?${params}` : ''}`,
     )
       .then((data) => setSessions(data.sessions))
-      .catch(() => setSessions([]))
+      .catch((err) => {
+        setSessions([]);
+        setError(err instanceof Error ? err.message : 'Failed to load sessions');
+      })
       .finally(() => setLoading(false));
   }, [stationFilter]);
 
@@ -112,6 +117,12 @@ export default function Inventories() {
 
       {/* Content */}
       <div className="px-4 py-4 md:max-w-4xl md:mx-auto">
+        {error && (
+          <div className="mb-4 rounded-xl bg-red-950/50 border border-red-900/50 px-4 py-3 text-sm text-red-300">
+            {error}
+          </div>
+        )}
+
         {loading && (
           <div className="flex justify-center py-12">
             <div className="animate-spin h-8 w-8 border-2 border-dcvfd-accent border-t-transparent rounded-full" />
