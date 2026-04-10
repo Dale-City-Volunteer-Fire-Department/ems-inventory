@@ -19,11 +19,11 @@ export default function CategoryGroup({
   const allEntered = enteredCount === itemCount;
 
   return (
-    <div className="mb-3">
+    <div className="mb-2">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="sticky top-0 z-10 flex w-full items-center justify-between bg-surface-raised px-4 py-3 text-left font-semibold text-white rounded-xl border border-border-subtle hover:border-zinc-600 transition-all"
+        className="sticky top-0 z-10 flex w-full items-center justify-between bg-surface-raised px-4 py-2 text-left font-semibold text-white rounded-xl border border-border-subtle hover:border-zinc-600 transition-all"
       >
         <span className="flex items-center gap-2.5">
           <svg

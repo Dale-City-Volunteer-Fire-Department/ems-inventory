@@ -5,7 +5,7 @@ import { handleGetItems, handleUpdateItem } from './items';
 import { handleGetStations } from './stations';
 import { handleGetOrders, handleUpdateOrder } from './orders';
 import { handleGetTargets, handleUpdateTarget } from './stock-targets';
-import { getHistory } from './lib/db';
+import { getHistory, getSessions } from './lib/db';
 import { ok, badRequest, notFound, forbidden, serverError } from './lib/response';
 import type { Category } from '../shared/types';
 import { handleEntraLogin, handleEntraCallback } from './auth/entra';
@@ -122,6 +122,15 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
     return handleAuthLogout(request, env);
   }
 
+  // ── Dashboard stats (logistics+) ──────────────────────────────────
+  if (path === '/api/dashboard/stats' && method === 'GET') {
+    const session = await requireAuth(request, env);
+    if (session instanceof Response) return session;
+    const denied = requireRole(session, 'logistics');
+    if (denied) return denied;
+    return handleGetDashboardStats(env);
+  }
+
   // ── Stations ──────────────────────────────────────────────────────
   if (path === '/api/stations' && method === 'GET') {
     return handleGetStations(request, env);
@@ -168,6 +177,12 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
   }
 
   // ── Inventory ─────────────────────────────────────────────────────
+  // GET /api/inventory/sessions — list completed inventory sessions (requires auth)
+  if (path === '/api/inventory/sessions' && method === 'GET') {
+    const session = await requireAuth(request, env);
+    if (session instanceof Response) return session;
+    return handleGetSessions(request, env);
+  }
   // GET /api/inventory/current/:stationId/summary — dashboard summary (requires auth)
   if (/^\/api\/inventory\/current\/\d+\/summary$/.test(path) && method === 'GET') {
     const session = await requireAuth(request, env);
@@ -389,6 +404,30 @@ async function handleGetHistory(request: Request, env: Env): Promise<Response> {
   }
 }
 
+/**
+ * GET /api/inventory/sessions
+ * Query params: ?stationId=10&limit=100&offset=0
+ */
+async function handleGetSessions(request: Request, env: Env): Promise<Response> {
+  try {
+    const url = new URL(request.url);
+    const stationId = url.searchParams.get('stationId');
+    const limit = Number(url.searchParams.get('limit')) || undefined;
+    const offset = Number(url.searchParams.get('offset')) || undefined;
+
+    const sessions = await getSessions(env.DB, {
+      stationId: stationId ? Number(stationId) : undefined,
+      limit,
+      offset,
+    });
+
+    return ok({ sessions, count: sessions.length });
+  } catch (err) {
+    console.error('[getSessions]', err);
+    return serverError('Failed to get sessions');
+  }
+}
+
 // ── User management handlers (admin only) ─────────────────────────
 
 const VALID_ROLES: UserRole[] = ['crew', 'logistics', 'admin'];
@@ -576,5 +615,160 @@ async function handleUpdateUserActive(request: Request, env: Env, path: string, 
   } catch (err) {
     console.error('[updateUserActive]', err);
     return serverError('Failed to update user status');
+  }
+}
+
+/**
+ * GET /api/dashboard/stats — comprehensive analytics for logistics dashboard
+ */
+async function handleGetDashboardStats(env: Env): Promise<Response> {
+  try {
+    // 1. Latest session per station
+    const latestSessions = await env.DB
+      .prepare(
+        `SELECT s.id, s.station_id, s.submitted_at, s.submitted_by, s.item_count, s.items_short,
+                st.name AS station_name, st.code AS station_code
+         FROM inventory_sessions s
+         JOIN stations st ON st.id = s.station_id
+         WHERE s.id IN (
+           SELECT MAX(id) FROM inventory_sessions GROUP BY station_id
+         )
+         ORDER BY st.id`,
+      )
+      .all<{
+        id: number;
+        station_id: number;
+        submitted_at: string;
+        submitted_by: string | null;
+        item_count: number;
+        items_short: number;
+        station_name: string;
+        station_code: string;
+      }>();
+
+    const sessionIds = latestSessions.results.map((s) => s.id);
+    const sessionMap = new Map(latestSessions.results.map((s) => [s.station_id, s]));
+
+    // 2. Shortages from latest sessions
+    let shortagesByStation = new Map<number, { itemName: string; category: string; target: number; actual: number; delta: number }[]>();
+    let categoryShortages: { category: string; count: number }[] = [];
+
+    if (sessionIds.length > 0) {
+      const placeholders = sessionIds.map(() => '?').join(',');
+
+      // Get individual shortage items
+      const shortageRows = await env.DB
+        .prepare(
+          `SELECT h.session_id, h.item_name, h.category, h.target_count, h.actual_count, h.delta, s.station_id
+           FROM inventory_history h
+           JOIN inventory_sessions s ON s.id = h.session_id
+           WHERE h.session_id IN (${placeholders}) AND h.status = 'short'
+           ORDER BY h.delta ASC`,
+        )
+        .bind(...sessionIds)
+        .all<{
+          session_id: number;
+          item_name: string;
+          category: string;
+          target_count: number;
+          actual_count: number;
+          delta: number;
+          station_id: number;
+        }>();
+
+      for (const row of shortageRows.results) {
+        const list = shortagesByStation.get(row.station_id) ?? [];
+        list.push({
+          itemName: row.item_name,
+          category: row.category,
+          target: row.target_count,
+          actual: row.actual_count,
+          delta: row.delta,
+        });
+        shortagesByStation.set(row.station_id, list);
+      }
+
+      // 3. Category shortage counts
+      const catRows = await env.DB
+        .prepare(
+          `SELECT category, COUNT(*) as count
+           FROM inventory_history
+           WHERE session_id IN (${placeholders}) AND status = 'short'
+           GROUP BY category
+           ORDER BY count DESC`,
+        )
+        .bind(...sessionIds)
+        .all<{ category: string; count: number }>();
+
+      categoryShortages = catRows.results;
+    }
+
+    // Build stations array (include all active stations, even those with no sessions)
+    const allStations = await env.DB
+      .prepare('SELECT id, name, code FROM stations WHERE is_active = 1 ORDER BY id')
+      .all<{ id: number; name: string; code: string }>();
+
+    const stations = allStations.results.map((st) => {
+      const session = sessionMap.get(st.id);
+      return {
+        stationId: st.id,
+        stationName: st.name,
+        stationCode: st.code,
+        lastSubmission: session?.submitted_at ?? null,
+        itemCount: session?.item_count ?? 0,
+        itemsShort: session?.items_short ?? 0,
+        shortages: shortagesByStation.get(st.id) ?? [],
+      };
+    });
+
+    // 4. Order pipeline
+    const orderRows = await env.DB
+      .prepare('SELECT status, COUNT(*) as count FROM orders GROUP BY status')
+      .all<{ status: string; count: number }>();
+
+    const orderMap = new Map(orderRows.results.map((r) => [r.status, r.count]));
+    const orderPipeline = {
+      pending: orderMap.get('pending') ?? 0,
+      inProgress: orderMap.get('in_progress') ?? 0,
+      filled: orderMap.get('filled') ?? 0,
+    };
+
+    // 5. Recent sessions
+    const recentRows = await env.DB
+      .prepare(
+        `SELECT s.id, s.submitted_at, s.submitted_by, s.item_count, s.items_short,
+                st.name AS station_name
+         FROM inventory_sessions s
+         JOIN stations st ON st.id = s.station_id
+         ORDER BY s.submitted_at DESC
+         LIMIT 10`,
+      )
+      .all<{
+        id: number;
+        submitted_at: string;
+        submitted_by: string | null;
+        item_count: number;
+        items_short: number;
+        station_name: string;
+      }>();
+
+    const recentSessions = recentRows.results.map((r) => ({
+      id: r.id,
+      stationName: r.station_name,
+      submittedAt: r.submitted_at,
+      submittedBy: r.submitted_by,
+      itemCount: r.item_count,
+      itemsShort: r.items_short,
+    }));
+
+    return ok({
+      stations,
+      categoryShortages,
+      orderPipeline,
+      recentSessions,
+    });
+  } catch (err) {
+    console.error('[getDashboardStats]', err);
+    return serverError('Failed to load dashboard stats');
   }
 }
