@@ -51,6 +51,9 @@ export default function ParManagement() {
   const [editingName, setEditingName] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
 
+  // Inline delete confirmation
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+
   // ── Data loading ──────────────────────────────────────────────────
 
   const loadItems = useCallback(async () => {
@@ -196,8 +199,24 @@ export default function ParManagement() {
       setItems((prev) =>
         prev.map((i) => (i.id === item.id ? { ...i, is_active: !i.is_active } : i)),
       );
+      setConfirmDeleteId(null);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Failed to update item');
+    }
+  };
+
+  const handleCategoryChange = async (item: Item, newCat: Category) => {
+    if (newCat === item.category) return;
+    try {
+      await apiFetch<{ item: Item }>(`/items/${item.id}`, {
+        method: 'PUT',
+        body: { category: newCat },
+      });
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, category: newCat } : i)),
+      );
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to change category');
     }
   };
 
@@ -274,7 +293,7 @@ export default function ParManagement() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="px-4 py-4 space-y-3">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -403,7 +422,7 @@ export default function ParManagement() {
               key={cat}
               className="rounded-lg border border-border-subtle bg-surface overflow-hidden"
             >
-              {/* Category header */}
+              {/* Category header — always visible, spans full width */}
               <button
                 onClick={() => toggleCategory(cat)}
                 className="w-full flex items-center gap-2 px-3 py-2 bg-surface-raised text-left hover:bg-zinc-800/50 transition-colors"
@@ -422,9 +441,9 @@ export default function ParManagement() {
                 </span>
               </button>
 
-              {/* Station column headers */}
+              {/* Station column headers + item rows — hidden when collapsed */}
               {!isCollapsed && (
-                <>
+                <div>
                   <div className="grid grid-cols-[1fr_repeat(4,56px)] items-center border-b border-border-subtle px-2 py-1">
                     <div className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider pl-1">
                       Item
@@ -435,7 +454,7 @@ export default function ParManagement() {
                         className="text-center text-[10px] font-medium text-zinc-500 uppercase tracking-wider leading-tight"
                         title={STATION_NICKNAMES[sid]}
                       >
-                        {sid}
+                        FS {sid}
                       </div>
                     ))}
                   </div>
@@ -450,14 +469,17 @@ export default function ParManagement() {
                       editingItemId={editingItemId}
                       editingName={editingName}
                       renameInputRef={renameInputRef}
+                      confirmDeleteId={confirmDeleteId}
                       onParChange={handleParChange}
                       onToggleActive={handleToggleActive}
                       onRenameStart={handleRenameStart}
                       onRenameChange={setEditingName}
                       onRenameCommit={handleRenameCommit}
+                      onConfirmDelete={setConfirmDeleteId}
+                      onCategoryChange={handleCategoryChange}
                     />
                   ))}
-                </>
+                </div>
               )}
             </div>
           );
@@ -483,11 +505,14 @@ interface ItemRowProps {
   editingItemId: number | null;
   editingName: string;
   renameInputRef: React.RefObject<HTMLInputElement | null>;
+  confirmDeleteId: number | null;
   onParChange: (itemId: number, stationId: number, value: string) => void;
   onToggleActive: (item: Item) => void;
   onRenameStart: (item: Item) => void;
   onRenameChange: (name: string) => void;
   onRenameCommit: () => void;
+  onConfirmDelete: (id: number | null) => void;
+  onCategoryChange: (item: Item, newCategory: Category) => void;
 }
 
 function ItemRow({
@@ -497,22 +522,27 @@ function ItemRow({
   editingItemId,
   editingName,
   renameInputRef,
+  confirmDeleteId,
   onParChange,
   onToggleActive,
   onRenameStart,
   onRenameChange,
   onRenameCommit,
+  onConfirmDelete,
+  onCategoryChange,
 }: ItemRowProps) {
   const isEditing = editingItemId === item.id;
+  const isConfirmingDelete = confirmDeleteId === item.id;
+  const [showCategorySelect, setShowCategorySelect] = useState(false);
 
   return (
     <div
-      className={`grid grid-cols-[1fr_repeat(4,56px)] items-center px-2 py-1 border-b border-border-subtle last:border-b-0 ${
+      className={`grid grid-cols-[1fr_repeat(4,56px)] items-center px-2 py-2 border-b border-border-subtle last:border-b-0 ${
         !item.is_active ? 'opacity-50' : ''
       } hover:bg-surface-overlay/50 transition-colors`}
     >
       {/* Item name cell */}
-      <div className="flex items-center gap-1 min-w-0 pr-1">
+      <div className="flex items-center gap-2 min-w-0 pr-2">
         {isEditing ? (
           <input
             ref={renameInputRef}
@@ -540,26 +570,74 @@ function ItemRow({
           </button>
         )}
 
-        {/* Active toggle */}
-        <button
-          onClick={() => onToggleActive(item)}
-          className={`shrink-0 p-0.5 rounded transition-colors ${
-            item.is_active
-              ? 'text-zinc-600 hover:text-red-400'
-              : 'text-emerald-600 hover:text-emerald-400'
-          }`}
-          title={item.is_active ? 'Deactivate item' : 'Reactivate item'}
-        >
-          {item.is_active ? (
+        {/* Category change dropdown */}
+        {showCategorySelect ? (
+          <select
+            value={item.category}
+            onChange={(e) => {
+              onCategoryChange(item, e.target.value as Category);
+              setShowCategorySelect(false);
+            }}
+            onBlur={() => setShowCategorySelect(false)}
+            autoFocus
+            className="shrink-0 text-[10px] px-1 py-0.5 rounded bg-surface border border-border-subtle text-zinc-300 focus:outline-none focus:ring-1 focus:ring-dcvfd-accent"
+          >
+            {CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <button
+            onClick={() => setShowCategorySelect(true)}
+            className="shrink-0 text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors"
+            title="Change category"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+          </button>
+        )}
+
+        {/* Active toggle / delete confirmation */}
+        {isConfirmingDelete ? (
+          <span className="shrink-0 flex items-center gap-1">
+            <span className="text-[10px] text-red-400">Delete?</span>
+            <button
+              onClick={() => onToggleActive(item)}
+              className="text-[10px] text-red-400 hover:text-red-300 font-medium"
+            >
+              Yes
+            </button>
+            <button
+              onClick={() => onConfirmDelete(null)}
+              className="text-[10px] text-zinc-500 hover:text-zinc-300 font-medium"
+            >
+              No
+            </button>
+          </span>
+        ) : item.is_active ? (
+          <button
+            onClick={() => onConfirmDelete(item.id)}
+            className="shrink-0 p-0.5 rounded text-zinc-600 hover:text-red-400 transition-colors"
+            title="Deactivate item"
+          >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-          ) : (
+          </button>
+        ) : (
+          <button
+            onClick={() => onToggleActive(item)}
+            className="shrink-0 p-0.5 rounded text-emerald-600 hover:text-emerald-400 transition-colors"
+            title="Reactivate item"
+          >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-          )}
-        </button>
+          </button>
+        )}
       </div>
 
       {/* Station cells — 4 compact numeric inputs */}
@@ -572,14 +650,14 @@ function ItemRow({
         return (
           <div
             key={sid}
-            className={`flex items-center justify-center ${isSaving ? 'bg-amber-500/5' : ''}`}
+            className={`flex items-center justify-center px-0.5 ${isSaving ? 'bg-amber-500/5' : ''}`}
           >
             <input
               type="text"
               inputMode="numeric"
               value={count === 0 ? '' : String(count)}
               onChange={(e) => onParChange(item.id, sid, e.target.value)}
-              className={`w-12 px-1 py-0.5 rounded text-center text-xs font-mono bg-surface border text-zinc-100 focus:outline-none focus:ring-1 focus:ring-dcvfd-accent ${
+              className={`w-12 px-1 py-1 rounded text-center text-xs font-mono bg-surface border text-zinc-100 focus:outline-none focus:ring-1 focus:ring-dcvfd-accent ${
                 isSaving ? 'border-amber-500/40' : 'border-border-subtle'
               }`}
               placeholder="0"

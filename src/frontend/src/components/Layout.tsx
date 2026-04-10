@@ -18,14 +18,21 @@ interface LayoutProps {
  */
 export default function Layout({ children, role, userName }: LayoutProps) {
   const [profileOpen, setProfileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div className="min-h-dvh bg-surface">
-      <Sidebar role={role} userName={userName} onProfileClick={() => setProfileOpen(true)} />
+      <Sidebar
+        role={role}
+        userName={userName}
+        onProfileClick={() => setProfileOpen(true)}
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((c) => !c)}
+      />
       <Header onProfileClick={() => setProfileOpen(true)} />
 
       {/* Main content — offset on desktop for sidebar */}
-      <main className="md:ml-64">
+      <main className={collapsed ? 'md:ml-16' : 'md:ml-64'}>
         {children}
       </main>
 
