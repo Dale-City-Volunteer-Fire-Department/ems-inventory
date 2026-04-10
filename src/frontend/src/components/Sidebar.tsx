@@ -156,9 +156,9 @@ export default function Sidebar({ role, userName, onProfileClick, collapsed = fa
       {/* Logo */}
       <div className="flex items-center justify-center px-5 py-5 border-b border-dcvfd/40">
         {collapsed ? (
-          <img src="/dcvfd-badge.svg" alt="DCVFD" className="h-8 w-8" />
+          <img src="/dcvfd-simple-white.png" alt="DCVFD" className="h-8 w-8 object-contain" />
         ) : (
-          <img src="/dcvfd-logo-wide.svg" alt="DCVFD" className="h-10 w-auto" />
+          <img src="/dcvfd-simple-white.png" alt="DCVFD" className="h-10 w-auto" />
         )}
       </div>
 

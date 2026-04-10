@@ -24,6 +24,7 @@ export default function Orders() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
   const [confirmModal, setConfirmModal] = useState<{
@@ -37,9 +38,13 @@ export default function Orders() {
   // Fetch orders
   useEffect(() => {
     setLoading(true);
+    setError(null);
     apiFetch<{ orders: Order[]; count: number }>('/orders')
       .then((data) => setOrders(data.orders))
-      .catch(() => setOrders([]))
+      .catch((err) => {
+        setOrders([]);
+        setError(err instanceof Error ? err.message : 'Failed to load orders');
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -145,6 +150,12 @@ export default function Orders() {
 
       {/* Content */}
       <div className="px-4 py-4 md:max-w-4xl md:mx-auto">
+        {error && (
+          <div className="mb-4 rounded-xl bg-red-950/50 border border-red-900/50 px-4 py-3 text-sm text-red-300">
+            {error}
+          </div>
+        )}
+
         {loading && (
           <div className="flex justify-center py-12">
             <div className="animate-spin h-8 w-8 border-2 border-dcvfd-accent border-t-transparent rounded-full" />

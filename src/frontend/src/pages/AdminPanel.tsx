@@ -24,6 +24,7 @@ export default function AdminPanel() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [confirmDeactivate, setConfirmDeactivate] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -33,8 +34,9 @@ export default function AdminPanel() {
       const qs = params.toString();
       const data = await apiFetch<{ users: UserRecord[]; count: number }>(`/users${qs ? `?${qs}` : ''}`);
       setUsers(data.users);
-    } catch {
-      // handle error
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load users');
     } finally {
       setUsersLoading(false);
     }
@@ -53,8 +55,9 @@ export default function AdminPanel() {
       if (data.user) {
         setUsers((prev) => prev.map((u) => (u.id === userId ? data.user : u)));
       }
-    } catch {
-      // handle error
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update role');
     }
   };
 
@@ -72,8 +75,9 @@ export default function AdminPanel() {
       if (data.user) {
         setUsers((prev) => prev.map((u) => (u.id === userId ? data.user : u)));
       }
-    } catch {
-      // handle error
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update user status');
     }
   };
 
@@ -102,6 +106,16 @@ export default function AdminPanel() {
       </div>
 
       <div className="px-4 py-4 md:max-w-6xl md:mx-auto">
+        {error && (
+          <div className="flex items-center justify-between gap-2 mb-4 px-3 py-2 rounded-xl bg-red-950/50 border border-red-900/50 text-sm text-red-300">
+            <span>{error}</span>
+            <button type="button" onClick={() => setError(null)} className="text-red-400 hover:text-red-200 shrink-0">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
