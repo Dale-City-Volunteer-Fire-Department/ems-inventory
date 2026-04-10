@@ -102,6 +102,20 @@ export default function ParManagement() {
 
   // ── Filtering & grouping ──────────────────────────────────────────
 
+  // Merged list of base + custom categories
+  const allCategories = useMemo(() => {
+    const base = CATEGORIES as readonly string[];
+    const fromItems = new Set(items.map((i) => i.category));
+    const merged = [...base];
+    for (const cat of customCategories) {
+      if (!merged.includes(cat)) merged.push(cat);
+    }
+    for (const cat of fromItems) {
+      if (!merged.includes(cat)) merged.push(cat);
+    }
+    return merged;
+  }, [items, customCategories]);
+
   const filteredItems = useMemo(() => {
     if (!search.trim()) return items;
     const q = search.toLowerCase();
@@ -290,20 +304,6 @@ export default function ParManagement() {
       return next;
     });
   };
-
-  // Merged list of base + custom categories
-  const allCategories = useMemo(() => {
-    const base = CATEGORIES as readonly string[];
-    const fromItems = new Set(items.map((i) => i.category));
-    const merged = [...base];
-    for (const cat of customCategories) {
-      if (!merged.includes(cat)) merged.push(cat);
-    }
-    for (const cat of fromItems) {
-      if (!merged.includes(cat)) merged.push(cat);
-    }
-    return merged;
-  }, [items, customCategories]);
 
   const handleAddCategory = () => {
     const name = newCategoryName.trim();
