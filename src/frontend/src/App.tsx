@@ -6,7 +6,10 @@ import { useStations } from './hooks/useStations';
 import Login from './pages/Login';
 import StationSelect from './pages/StationSelect';
 import InventoryForm from './pages/InventoryForm';
-import LogisticsDashboard from './pages/LogisticsDashboard';
+import Dashboard from './pages/Dashboard';
+import Inventories from './pages/Inventories';
+import Orders from './pages/Orders';
+import ParManagement from './pages/ParManagement';
 import AdminPanel from './pages/AdminPanel';
 import Layout from './components/Layout';
 import './index.css';
@@ -59,7 +62,16 @@ function AppShell() {
           }
         />
         {userRank >= ROLE_RANK.logistics && (
-          <Route path="/dashboard" element={<LogisticsDashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+        )}
+        {userRank >= ROLE_RANK.logistics && (
+          <Route path="/inventories" element={<Inventories />} />
+        )}
+        {userRank >= ROLE_RANK.logistics && (
+          <Route path="/orders" element={<Orders />} />
+        )}
+        {userRank >= ROLE_RANK.logistics && (
+          <Route path="/par" element={<ParManagement />} />
         )}
         {userRank >= ROLE_RANK.admin && (
           <Route path="/admin" element={<AdminPanel />} />

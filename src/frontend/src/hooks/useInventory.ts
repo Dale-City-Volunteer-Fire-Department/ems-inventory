@@ -16,9 +16,11 @@ interface SubmitPayload {
 }
 
 interface SubmitResult {
-  sessionId: string;
-  totalItems: number;
-  shortItems: number;
+  sessionId: number;
+  itemCount: number;
+  itemsShort: number;
+  orderId: number | null;
+  message: string;
 }
 
 export function useInventory(stationId: number | null) {

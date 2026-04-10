@@ -58,12 +58,12 @@ export default function InventoryForm({ station, onChangeStation }: InventoryFor
           <div className="w-full space-y-2 text-sm">
             <div className="flex justify-between rounded-lg bg-surface-overlay px-4 py-2.5">
               <span className="text-zinc-400">Total items</span>
-              <span className="font-mono font-medium">{submitResult.totalItems}</span>
+              <span className="font-mono font-medium">{submitResult.itemCount}</span>
             </div>
             <div className="flex justify-between rounded-lg bg-surface-overlay px-4 py-2.5">
               <span className="text-zinc-400">Items short</span>
-              <span className={`font-mono font-medium ${submitResult.shortItems > 0 ? 'text-ems-red' : 'text-ems-green'}`}>
-                {submitResult.shortItems}
+              <span className={`font-mono font-medium ${submitResult.itemsShort > 0 ? 'text-ems-red' : 'text-ems-green'}`}>
+                {submitResult.itemsShort}
               </span>
             </div>
           </div>
@@ -119,7 +119,7 @@ export default function InventoryForm({ station, onChangeStation }: InventoryFor
       )}
 
       {/* Category groups */}
-      <div className="px-3 pt-3 md:max-w-4xl md:mx-auto md:grid md:grid-cols-2 md:gap-4">
+      <div className="px-3 pt-2 md:max-w-4xl md:mx-auto md:grid md:grid-cols-2 md:gap-3">
         {Object.entries(itemsByCategory).map(([category, items]) => {
           const enteredCount = items.filter(
             (i) => counts[i.item_id] !== null && counts[i.item_id] !== undefined,

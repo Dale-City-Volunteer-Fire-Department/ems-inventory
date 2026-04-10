@@ -238,6 +238,49 @@ function formatPickList(
   return lines.join('\n').trim();
 }
 
+// ── Sessions ────────────────────────────────────────────────────────
+
+interface SessionFilters {
+  stationId?: number;
+  limit?: number;
+  offset?: number;
+}
+
+export interface InventorySession {
+  id: number;
+  station_id: number;
+  station_name: string;
+  submitted_by: string | null;
+  submitted_at: string;
+  item_count: number;
+  items_short: number;
+}
+
+export async function getSessions(db: D1Database, filters?: SessionFilters): Promise<InventorySession[]> {
+  const conditions: string[] = [];
+  const binds: unknown[] = [];
+
+  if (filters?.stationId) {
+    conditions.push('s.station_id = ?');
+    binds.push(filters.stationId);
+  }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const limit = filters?.limit ?? 100;
+  const offset = filters?.offset ?? 0;
+
+  const sql = `SELECT s.*, st.name AS station_name
+               FROM inventory_sessions s
+               JOIN stations st ON st.id = s.station_id
+               ${where}
+               ORDER BY s.submitted_at DESC
+               LIMIT ? OFFSET ?`;
+  binds.push(limit, offset);
+
+  const result = await db.prepare(sql).bind(...binds).all<InventorySession>();
+  return result.results;
+}
+
 // ── History ─────────────────────────────────────────────────────────
 
 interface HistoryFilters {
