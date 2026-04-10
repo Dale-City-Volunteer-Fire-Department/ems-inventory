@@ -156,9 +156,9 @@ export default function Sidebar({ role, userName, onProfileClick, collapsed = fa
       {/* Logo */}
       <div className="flex items-center justify-center px-5 py-5 border-b border-dcvfd/40">
         {collapsed ? (
-          <img src="/dcvfd-simple-white.png" alt="DCVFD" className="h-8 w-8 object-contain" />
+          <img src="/dcvfd-simple-white.png" alt="DCVFD" className="h-10 w-10 object-contain" />
         ) : (
-          <img src="/dcvfd-simple-white.png" alt="DCVFD" className="h-10 w-auto" />
+          <img src="/dcvfd-simple-white.png" alt="DCVFD" className="h-14 w-auto" />
         )}
       </div>
 
@@ -204,7 +204,7 @@ export default function Sidebar({ role, userName, onProfileClick, collapsed = fa
             >
               <SidebarIcon icon={item.icon} active={active} />
               {!collapsed && item.label}
-              {!collapsed && active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-dcvfd-accent pulse-dot" />}
+
             </button>
           );
         })}
