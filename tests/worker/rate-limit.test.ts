@@ -1,44 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createMockKV } from '../helpers/mocks';
-
-// ── Rate limiting logic (mirrors magic-link.ts and pin.ts) ──────────
-//
-// We test the rate limiting functions by reimplementing the same KV-based
-// counter logic used in the source. The source functions are not exported
-// directly, so we test the pattern against the same KV mock to validate
-// the behavior.
-
-const MAGIC_RATE_LIMIT = 5;
-const MAGIC_RATE_WINDOW = 15 * 60; // 15 minutes
-
-const PIN_RATE_LIMIT = 10;
-const PIN_RATE_WINDOW = 5 * 60; // 5 minutes
-
-async function checkMagicLinkRateLimit(kv: KVNamespace, email: string): Promise<boolean> {
-  const key = `rate:magic:${email}`;
-  const raw = await kv.get(key, 'text');
-  const count = raw ? parseInt(raw, 10) : 0;
-
-  if (count >= MAGIC_RATE_LIMIT) {
-    return false; // rate limited
-  }
-
-  await kv.put(key, String(count + 1), { expirationTtl: MAGIC_RATE_WINDOW });
-  return true; // allowed
-}
-
-async function checkPinRateLimit(kv: KVNamespace, ip: string): Promise<boolean> {
-  const key = `rate:pin:${ip}`;
-  const raw = await kv.get(key, 'text');
-  const count = raw ? parseInt(raw, 10) : 0;
-
-  if (count >= PIN_RATE_LIMIT) {
-    return false; // rate limited
-  }
-
-  await kv.put(key, String(count + 1), { expirationTtl: PIN_RATE_WINDOW });
-  return true; // allowed
-}
+import { checkMagicLinkRateLimit } from '../../src/worker/auth/magic-link';
+import { checkPinRateLimit } from '../../src/worker/auth/pin';
 
 // ── Tests ────────────────────────────────────────────────────────────
 

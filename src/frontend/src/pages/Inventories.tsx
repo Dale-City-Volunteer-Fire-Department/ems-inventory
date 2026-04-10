@@ -1,17 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { InventoryHistory } from '@shared/types';
+import type { InventorySession, InventorySessionsResponse, InventoryHistoryResponse } from '@shared/api-responses';
 import { useStations } from '../hooks/useStations';
 import { apiFetch } from '../hooks/useApi';
-
-interface InventorySession {
-  id: number;
-  station_id: number;
-  station_name: string;
-  submitted_by: string | null;
-  submitted_at: string;
-  item_count: number;
-  items_short: number;
-}
 
 export default function Inventories() {
   const { stations } = useStations();
@@ -30,7 +21,7 @@ export default function Inventories() {
     if (stationFilter) params.set('stationId', String(stationFilter));
 
     setError(null);
-    apiFetch<{ sessions: InventorySession[]; count: number }>(
+    apiFetch<InventorySessionsResponse>(
       `/inventory/sessions${params.toString() ? `?${params}` : ''}`,
     )
       .then((data) => setSessions(data.sessions))
@@ -54,7 +45,7 @@ export default function Inventories() {
       if (!sessionItems[sessionId]) {
         setItemsLoading(sessionId);
         try {
-          const data = await apiFetch<{ history: InventoryHistory[]; count: number }>(
+          const data = await apiFetch<InventoryHistoryResponse>(
             `/inventory/history?sessionId=${sessionId}`,
           );
           setSessionItems((prev) => ({ ...prev, [sessionId]: data.history }));

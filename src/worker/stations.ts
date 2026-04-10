@@ -3,6 +3,7 @@
 import type { Env } from './types';
 import { getStations } from './lib/db';
 import { ok, serverError } from './lib/response';
+import type { StationsResponse } from '@shared/api-responses';
 
 /**
  * GET /api/stations
@@ -11,7 +12,7 @@ import { ok, serverError } from './lib/response';
 export async function handleGetStations(_request: Request, env: Env): Promise<Response> {
   try {
     const stations = await getStations(env.DB);
-    return ok({ stations });
+    return ok<StationsResponse>({ stations });
   } catch (err) {
     return serverError(err instanceof Error ? err.message : 'Failed to get stations');
   }

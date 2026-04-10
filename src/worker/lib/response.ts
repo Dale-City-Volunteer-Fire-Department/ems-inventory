@@ -2,11 +2,11 @@
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
-export function ok(data: unknown): Response {
+export function ok<T>(data: T): Response {
   return new Response(JSON.stringify(data), { status: 200, headers: JSON_HEADERS });
 }
 
-export function created(data: unknown): Response {
+export function created<T>(data: T): Response {
   return new Response(JSON.stringify(data), { status: 201, headers: JSON_HEADERS });
 }
 

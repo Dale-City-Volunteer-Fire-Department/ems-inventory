@@ -3,6 +3,7 @@
 import type { Env } from './types';
 import { getInventoryTemplate, submitInventory } from './lib/db';
 import { ok, badRequest, notFound, serverError } from './lib/response';
+import type { InventoryTemplateItem, InventorySubmitResponse } from '@shared/api-responses';
 
 /**
  * GET /api/inventory/current/:stationId
@@ -25,22 +26,22 @@ export async function handleGetTemplate(request: Request, env: Env): Promise<Res
       return notFound(`No items found for station ${stationId}`);
     }
 
-    // Map to the shape the frontend expects (InventoryItem)
-    const items = rows.map((r) => ({
+    // Map to the shape the frontend expects (InventoryTemplateItem)
+    const items: InventoryTemplateItem[] = rows.map((r) => ({
       id: 0,
       item_id: r.item_id,
       station_id: stationId,
       target_count: r.target_count,
       actual_count: null,
       delta: null,
-      status: 'not_entered',
+      status: 'not_entered' as const,
       session_id: null,
       name: r.item_name,
       category: r.category,
       sort_order: r.sort_order,
     }));
 
-    return ok(items);
+    return ok<InventoryTemplateItem[]>(items);
   } catch (err) {
     return serverError(err instanceof Error ? err.message : 'Failed to get template');
   }
@@ -77,7 +78,7 @@ export async function handleSubmitInventory(request: Request, env: Env): Promise
 
     const result = await submitInventory(env.DB, body.stationId, body.counts, body.submittedBy);
 
-    return ok({
+    return ok<InventorySubmitResponse>({
       sessionId: result.sessionId,
       itemCount: result.itemCount,
       itemsShort: result.itemsShort,

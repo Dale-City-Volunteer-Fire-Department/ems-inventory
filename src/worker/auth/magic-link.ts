@@ -10,21 +10,53 @@ const ALLOWED_DOMAIN = 'pwcgov.org';
 const FROM_ADDRESS = 'DCVFD EMS Inventory <noreply@dcvfd.org>';
 
 /** Rate limit: max 5 requests per email per 15 minutes */
-const MAGIC_RATE_LIMIT = 5;
-const MAGIC_RATE_WINDOW = 15 * 60; // 15 minutes in seconds
+export const MAGIC_RATE_LIMIT = 5;
+export const MAGIC_RATE_WINDOW = 15 * 60; // 15 minutes in seconds
+
+// ── Email validation ──────────────────────────────────────────────
+
+export interface EmailValidationResult {
+  valid: boolean;
+  error?: string;
+}
+
+export function validateEmail(rawEmail: string | undefined | null): EmailValidationResult {
+  if (!rawEmail) {
+    return { valid: false, error: 'Valid email address required' };
+  }
+
+  const email = rawEmail.trim().toLowerCase();
+
+  if (!email || !email.includes('@')) {
+    return { valid: false, error: 'Valid email address required' };
+  }
+
+  // Reject emails with multiple @ signs
+  if (email.split('@').length !== 2) {
+    return { valid: false, error: 'Invalid email address' };
+  }
+
+  // Restrict to allowed domain
+  const domain = email.split('@')[1];
+  if (domain !== ALLOWED_DOMAIN) {
+    return { valid: false, error: `Only @${ALLOWED_DOMAIN} email addresses are allowed` };
+  }
+
+  return { valid: true };
+}
 
 // ── Rate limiting ─────────────────────────────────────────────────
 
-async function checkMagicLinkRateLimit(env: Env, email: string): Promise<boolean> {
+export async function checkMagicLinkRateLimit(kv: KVNamespace, email: string): Promise<boolean> {
   const key = `rate:magic:${email}`;
-  const raw = await env.SESSIONS.get(key, 'text');
+  const raw = await kv.get(key, 'text');
   const count = raw ? parseInt(raw, 10) : 0;
 
   if (count >= MAGIC_RATE_LIMIT) {
     return false; // rate limited
   }
 
-  await env.SESSIONS.put(key, String(count + 1), { expirationTtl: MAGIC_RATE_WINDOW });
+  await kv.put(key, String(count + 1), { expirationTtl: MAGIC_RATE_WINDOW });
   return true; // allowed
 }
 
@@ -39,25 +71,16 @@ async function checkMagicLinkRateLimit(env: Env, email: string): Promise<boolean
 export async function handleMagicLinkRequest(request: Request, env: Env): Promise<Response> {
   try {
     const body = (await request.json()) as { email?: string };
-    const email = body.email?.trim().toLowerCase();
 
-    if (!email || !email.includes('@')) {
-      return badRequest('Valid email address required');
+    // Validate email format and domain
+    const validation = validateEmail(body.email);
+    if (!validation.valid) {
+      return badRequest(validation.error!);
     }
-
-    // MEDIUM-1: Reject emails with multiple @ signs
-    if (email.split('@').length !== 2) {
-      return badRequest('Invalid email address');
-    }
-
-    // Restrict to allowed domain
-    const domain = email.split('@')[1];
-    if (domain !== ALLOWED_DOMAIN) {
-      return badRequest(`Only @${ALLOWED_DOMAIN} email addresses are allowed`);
-    }
+    const email = body.email!.trim().toLowerCase();
 
     // MEDIUM-4: Rate limit magic link requests
-    const allowed = await checkMagicLinkRateLimit(env, email);
+    const allowed = await checkMagicLinkRateLimit(env.SESSIONS, email);
     if (!allowed) {
       return tooManyRequests('Too many magic link requests. Please try again later.');
     }

@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { InventoryCount, Category } from '@shared/types';
+import type { InventorySubmitResponse } from '@shared/api-responses';
 import { CATEGORIES } from '@shared/categories';
 import { apiFetch } from './useApi';
 
@@ -15,20 +16,12 @@ interface SubmitPayload {
   submittedBy?: string;
 }
 
-interface SubmitResult {
-  sessionId: number;
-  itemCount: number;
-  itemsShort: number;
-  orderId: number | null;
-  message: string;
-}
-
 export function useInventory(stationId: number | null) {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [counts, setCounts] = useState<Record<number, number | null>>({});
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
+  const [submitResult, setInventorySubmitResponse] = useState<InventorySubmitResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadInventory = useCallback(async () => {
@@ -94,11 +87,11 @@ export function useInventory(stationId: number | null) {
             actualCount: actualCount!,
           })),
       };
-      const result = await apiFetch<SubmitResult>('/inventory/submit', {
+      const result = await apiFetch<InventorySubmitResponse>('/inventory/submit', {
         method: 'POST',
         body: payload,
       });
-      setSubmitResult(result);
+      setInventorySubmitResponse(result);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to submit inventory');
     } finally {

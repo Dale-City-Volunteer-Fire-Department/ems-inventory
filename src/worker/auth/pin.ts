@@ -3,19 +3,19 @@ import { createSession, buildSessionCookie } from './session';
 import { badRequest, forbidden, unauthorized, serverError, tooManyRequests } from '../lib/response';
 
 /** Rate limit: max 10 attempts per IP per 5 minutes */
-const PIN_RATE_LIMIT = 10;
-const PIN_RATE_WINDOW = 5 * 60; // 5 minutes in seconds
+export const PIN_RATE_LIMIT = 10;
+export const PIN_RATE_WINDOW = 5 * 60; // 5 minutes in seconds
 
-async function checkPinRateLimit(env: Env, ip: string): Promise<boolean> {
+export async function checkPinRateLimit(kv: KVNamespace, ip: string): Promise<boolean> {
   const key = `rate:pin:${ip}`;
-  const raw = await env.SESSIONS.get(key, 'text');
+  const raw = await kv.get(key, 'text');
   const count = raw ? parseInt(raw, 10) : 0;
 
   if (count >= PIN_RATE_LIMIT) {
     return false; // rate limited
   }
 
-  await env.SESSIONS.put(key, String(count + 1), { expirationTtl: PIN_RATE_WINDOW });
+  await kv.put(key, String(count + 1), { expirationTtl: PIN_RATE_WINDOW });
   return true; // allowed
 }
 
@@ -54,7 +54,7 @@ export async function handlePinAuth(request: Request, env: Env): Promise<Respons
   try {
     // MEDIUM-4: Rate limit PIN attempts by IP
     const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
-    const allowed = await checkPinRateLimit(env, ip);
+    const allowed = await checkPinRateLimit(env.SESSIONS, ip);
     if (!allowed) {
       return tooManyRequests('Too many PIN attempts. Please try again later.');
     }

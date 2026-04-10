@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { createElement } from 'react';
 import type { UserRole } from '@shared/types';
+import type { AuthMeResponse } from '@shared/api-responses';
 
 export interface AuthUser {
   role: UserRole;
@@ -34,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!cancelled) setUser(null);
           return;
         }
-        const data = (await res.json()) as { role?: UserRole; name?: string; email?: string | null; stationId?: number | null; photoUrl?: string | null };
+        const data = (await res.json()) as AuthMeResponse;
         if (!cancelled && data.role) {
           setUser({
             role: data.role,

@@ -1,43 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { StatefulD1Mock, makeTemplateItem } from '../helpers/mocks';
-import { submitInventory } from '../../src/worker/lib/db';
+import { submitInventory, formatPickList } from '../../src/worker/lib/db';
 import { CATEGORIES, CATEGORY_SORT } from '../../src/shared/categories';
-
-// ── Pick list format (extracted from db.ts formatPickList logic) ─────
-
-/**
- * Replicate the pick list formatting logic for direct testing.
- * This mirrors formatPickList in src/worker/lib/db.ts.
- */
-function formatPickList(
-  stationName: string,
-  shortItems: { item_name: string; category: string; actual: number; target: number; need: number }[],
-): string {
-  const now = new Date().toISOString().replace('T', ' ').slice(0, 16);
-  const lines: string[] = [];
-  lines.push(`RESUPPLY ORDER — ${stationName}`);
-  lines.push(`Submitted: ${now}`);
-  lines.push(`Items Short: ${shortItems.length}`);
-  lines.push('');
-
-  // Group by category
-  const byCategory = new Map<string, typeof shortItems>();
-  for (const item of shortItems) {
-    const group = byCategory.get(item.category) ?? [];
-    group.push(item);
-    byCategory.set(item.category, group);
-  }
-
-  for (const [category, items] of byCategory) {
-    lines.push(category.toUpperCase());
-    for (const item of items) {
-      lines.push(`  ${item.item_name}: Need ${item.need} (have ${item.actual}, target ${item.target})`);
-    }
-    lines.push('');
-  }
-
-  return lines.join('\n').trim();
-}
 
 // ── Tests ────────────────────────────────────────────────────────────
 

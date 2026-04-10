@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { Item, StockTarget, Category } from '@shared/types';
+import type { ItemsResponse, StockTargetsResponse, ItemResponse, StockTargetUpdateResponse } from '@shared/api-responses';
 import { CATEGORIES } from '@shared/categories';
 import { apiFetch } from '../hooks/useApi';
 import { STATION_NICKNAMES } from '../hooks/useStations';
@@ -7,7 +8,8 @@ import { STATION_NICKNAMES } from '../hooks/useStations';
 const STATION_IDS = [10, 13, 18, 20] as const;
 
 // Debounce helper
-function useDebouncedCallback<T extends (...args: unknown[]) => void>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function useDebouncedCallback<T extends (...args: any[]) => void>(
   callback: T,
   delay: number,
 ): T {
@@ -16,7 +18,8 @@ function useDebouncedCallback<T extends (...args: unknown[]) => void>(
   callbackRef.current = callback;
 
   const debounced = useCallback(
-    (...args: unknown[]) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (...args: any[]) => {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => callbackRef.current(...args), delay);
     },
@@ -67,7 +70,7 @@ export default function ParManagement() {
 
   const loadItems = useCallback(async () => {
     try {
-      const data = await apiFetch<{ items: Item[]; count: number }>('/items?active=false');
+      const data = await apiFetch<ItemsResponse>('/items?active=false');
       setItems(data.items);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Failed to load items');
@@ -78,7 +81,7 @@ export default function ParManagement() {
     try {
       const results = await Promise.all(
         STATION_IDS.map((sid) =>
-          apiFetch<{ stationId: number; targets: StockTarget[]; count: number }>(
+          apiFetch<StockTargetsResponse>(
             `/stock-targets?stationId=${sid}`,
           ),
         ),
@@ -144,7 +147,7 @@ export default function ParManagement() {
       const key = targetKey(itemId, stationId);
       setSavingCells((prev) => new Set(prev).add(key));
       try {
-        await apiFetch<{ itemId: number; stationId: number; targetCount: number }>(
+        await apiFetch<StockTargetUpdateResponse>(
           '/stock-targets',
           { method: 'PUT', body: { itemId, stationId, targetCount } },
         );
@@ -215,7 +218,7 @@ export default function ParManagement() {
 
   const handleToggleActive = async (item: Item) => {
     try {
-      await apiFetch<{ item: Item }>(`/items/${item.id}`, {
+      await apiFetch<ItemResponse>(`/items/${item.id}`, {
         method: 'PUT',
         body: { is_active: !item.is_active },
       });
@@ -231,7 +234,7 @@ export default function ParManagement() {
   const handleCategoryChange = async (item: Item, newCat: Category) => {
     if (newCat === item.category) return;
     try {
-      await apiFetch<{ item: Item }>(`/items/${item.id}`, {
+      await apiFetch<ItemResponse>(`/items/${item.id}`, {
         method: 'PUT',
         body: { category: newCat },
       });
@@ -247,7 +250,7 @@ export default function ParManagement() {
     if (!newName.trim()) return;
     setAddSaving(true);
     try {
-      const data = await apiFetch<{ item: Item }>('/items', {
+      const data = await apiFetch<ItemResponse>('/items', {
         method: 'POST',
         body: { name: newName.trim(), category: newCategory },
       });
@@ -279,7 +282,7 @@ export default function ParManagement() {
       return;
     }
     try {
-      await apiFetch<{ item: Item }>(`/items/${editingItemId}`, {
+      await apiFetch<ItemResponse>(`/items/${editingItemId}`, {
         method: 'PUT',
         body: { name: editingName.trim() },
       });
@@ -335,7 +338,7 @@ export default function ParManagement() {
       const affected = items.filter((i) => i.category === oldName);
       await Promise.all(
         affected.map((item) =>
-          apiFetch<{ item: Item }>(`/items/${item.id}`, {
+          apiFetch<ItemResponse>(`/items/${item.id}`, {
             method: 'PUT',
             body: { category: newName },
           }),

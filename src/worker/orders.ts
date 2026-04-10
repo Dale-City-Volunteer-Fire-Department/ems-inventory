@@ -4,6 +4,7 @@ import type { Env } from './types';
 import { getOrders, updateOrderStatus } from './lib/db';
 import { ok, badRequest, notFound, serverError } from './lib/response';
 import type { OrderStatus } from '@shared/types';
+import type { OrdersResponse, OrderUpdateResponse } from '@shared/api-responses';
 
 const VALID_STATUSES: OrderStatus[] = ['pending', 'in_progress', 'filled'];
 const STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -36,7 +37,7 @@ export async function handleGetOrders(request: Request, env: Env): Promise<Respo
       offset,
     });
 
-    return ok({ orders, count: orders.length });
+    return ok<OrdersResponse>({ orders, count: orders.length });
   } catch (err) {
     return serverError(err instanceof Error ? err.message : 'Failed to get orders');
   }
@@ -74,7 +75,7 @@ export async function handleUpdateOrder(request: Request, env: Env): Promise<Res
     }
 
     await updateOrderStatus(env.DB, body.orderId, body.status, body.filledBy);
-    return ok({ orderId: body.orderId, status: body.status });
+    return ok<OrderUpdateResponse>({ orderId: body.orderId, status: body.status });
   } catch (err) {
     return serverError(err instanceof Error ? err.message : 'Failed to update order');
   }

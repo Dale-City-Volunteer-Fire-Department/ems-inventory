@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Order, OrderStatus } from '@shared/types';
+import type { OrdersResponse } from '@shared/api-responses';
 import { useStations } from '../hooks/useStations';
 import { useAuth } from '../hooks/useAuth';
 import { apiFetch } from '../hooks/useApi';
@@ -39,7 +40,7 @@ export default function Orders() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    apiFetch<{ orders: Order[]; count: number }>('/orders')
+    apiFetch<OrdersResponse>('/orders')
       .then((data) => setOrders(data.orders))
       .catch((err) => {
         setOrders([]);
@@ -84,7 +85,7 @@ export default function Orders() {
       } catch {
         // Revert on failure — refetch
         try {
-          const data = await apiFetch<{ orders: Order[]; count: number }>('/orders');
+          const data = await apiFetch<OrdersResponse>('/orders');
           setOrders(data.orders);
         } catch {
           // leave optimistic state

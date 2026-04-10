@@ -1,39 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../hooks/useApi';
 import { STATION_NICKNAMES } from '../hooks/useStations';
-
-// ── API response type ──────────────────────────────────────────────
-
-interface DashboardStationData {
-  stationId: number;
-  stationName: string;
-  stationCode: string;
-  lastSubmission: string | null;
-  itemCount: number;
-  itemsShort: number;
-  shortages: { itemName: string; category: string; target: number; actual: number; delta: number }[];
-}
-
-interface DashboardCategoryShortage {
-  category: string;
-  count: number;
-}
-
-interface DashboardRecentSession {
-  id: number;
-  stationName: string;
-  submittedAt: string;
-  submittedBy: string | null;
-  itemCount: number;
-  itemsShort: number;
-}
-
-interface DashboardStats {
-  stations: DashboardStationData[];
-  categoryShortages: DashboardCategoryShortage[];
-  orderPipeline: { pending: number; inProgress: number; filled: number };
-  recentSessions: DashboardRecentSession[];
-}
+import type { DashboardStatsResponse } from '@shared/api-responses';
 
 // ── Helpers ────────────────────────────────────────────────────────
 
@@ -92,7 +60,7 @@ const FRESHNESS_STYLES: Record<Freshness, { dot: string; label: string; bg: stri
 // ── Component ──────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const [data, setData] = useState<DashboardStats | null>(null);
+  const [data, setData] = useState<DashboardStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,7 +69,7 @@ export default function Dashboard() {
     setLoading(true);
     setError(null);
 
-    apiFetch<DashboardStats>('/dashboard/stats')
+    apiFetch<DashboardStatsResponse>('/dashboard/stats')
       .then((stats) => {
         if (!cancelled) setData(stats);
       })

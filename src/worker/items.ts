@@ -4,6 +4,7 @@ import type { Env } from './types';
 import { getItems, upsertItem } from './lib/db';
 import { ok, badRequest, serverError } from './lib/response';
 import type { Category } from '@shared/types';
+import type { ItemsResponse, ItemResponse } from '@shared/api-responses';
 
 const VALID_CATEGORIES: Category[] = [
   'Airway',
@@ -33,7 +34,7 @@ export async function handleGetItems(request: Request, env: Env): Promise<Respon
       items = items.filter((i) => i.category === categoryParam);
     }
 
-    return ok({ items, count: items.length });
+    return ok<ItemsResponse>({ items, count: items.length });
   } catch (err) {
     return serverError(err instanceof Error ? err.message : 'Failed to get items');
   }
@@ -62,7 +63,7 @@ export async function handleUpdateItem(request: Request, env: Env): Promise<Resp
     }
 
     const item = await upsertItem(env.DB, body);
-    return ok({ item });
+    return ok<ItemResponse>({ item });
   } catch (err) {
     return serverError(err instanceof Error ? err.message : 'Failed to update item');
   }

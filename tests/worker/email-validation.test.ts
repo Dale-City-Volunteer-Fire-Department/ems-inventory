@@ -1,41 +1,5 @@
 import { describe, it, expect } from 'vitest';
-
-// ── Email domain validation (mirrors magic-link.ts logic) ───────────
-//
-// The magic-link handler validates email addresses before sending.
-// We replicate the exact validation logic here for direct testing.
-
-const ALLOWED_DOMAIN = 'pwcgov.org';
-
-interface EmailValidationResult {
-  valid: boolean;
-  error?: string;
-}
-
-function validateEmail(rawEmail: string | undefined | null): EmailValidationResult {
-  if (!rawEmail) {
-    return { valid: false, error: 'Valid email address required' };
-  }
-
-  const email = rawEmail.trim().toLowerCase();
-
-  if (!email || !email.includes('@')) {
-    return { valid: false, error: 'Valid email address required' };
-  }
-
-  // Reject emails with multiple @ signs
-  if (email.split('@').length !== 2) {
-    return { valid: false, error: 'Invalid email address' };
-  }
-
-  // Restrict to allowed domain
-  const domain = email.split('@')[1];
-  if (domain !== ALLOWED_DOMAIN) {
-    return { valid: false, error: `Only @${ALLOWED_DOMAIN} email addresses are allowed` };
-  }
-
-  return { valid: true };
-}
+import { validateEmail } from '../../src/worker/auth/magic-link';
 
 // ── Tests ────────────────────────────────────────────────────────────
 
