@@ -135,11 +135,6 @@ export default function Sidebar({ role, userName, onProfileClick }: SidebarProps
         <img src="/dcvfd-logo-wide.svg" alt="DCVFD" className="h-10 w-auto" />
       </div>
 
-      {/* App title */}
-      <div className="px-5 pt-4 pb-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">EMS Inventory</h2>
-      </div>
-
       {/* Nav Links */}
       <nav className="flex-1 px-3 py-2 space-y-1">
         {visibleItems.map((item) => {
@@ -156,7 +151,9 @@ export default function Sidebar({ role, userName, onProfileClick }: SidebarProps
                     : 'bg-dcvfd-accent/90 text-white hover:bg-dcvfd-accent hover:shadow-md hover:shadow-dcvfd-accent/25'
                 }`}
               >
-                <SidebarIcon icon={item.icon} active={true} prominent={true} />
+                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
                 {item.label}
               </button>
             );
