@@ -54,6 +54,15 @@ export default function ParManagement() {
   // Inline delete confirmation
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
+  // Category management
+  const [showCategoryPanel, setShowCategoryPanel] = useState(false);
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [renamingCategory, setRenamingCategory] = useState<string | null>(null);
+  const [renameCategoryValue, setRenameCategoryValue] = useState('');
+  const [categoryBusy, setCategoryBusy] = useState(false);
+  const renameCategoryRef = useRef<HTMLInputElement>(null);
+
   // ── Data loading ──────────────────────────────────────────────────
 
   const loadItems = useCallback(async () => {
@@ -105,14 +114,14 @@ export default function ParManagement() {
 
   const groupedByCategory = useMemo(() => {
     const groups: Record<string, Item[]> = {};
-    for (const cat of CATEGORIES) {
+    for (const cat of allCategories) {
       const catItems = filteredItems.filter((i) => i.category === cat);
       if (catItems.length > 0) {
         groups[cat] = catItems.sort((a, b) => a.sort_order - b.sort_order);
       }
     }
     return groups;
-  }, [filteredItems]);
+  }, [filteredItems, allCategories]);
 
   // ── Auto-save PAR count ───────────────────────────────────────────
 
@@ -282,6 +291,74 @@ export default function ParManagement() {
     });
   };
 
+  // Merged list of base + custom categories
+  const allCategories = useMemo(() => {
+    const base = CATEGORIES as readonly string[];
+    const fromItems = new Set(items.map((i) => i.category));
+    const merged = [...base];
+    for (const cat of customCategories) {
+      if (!merged.includes(cat)) merged.push(cat);
+    }
+    for (const cat of fromItems) {
+      if (!merged.includes(cat)) merged.push(cat);
+    }
+    return merged;
+  }, [items, customCategories]);
+
+  const handleAddCategory = () => {
+    const name = newCategoryName.trim();
+    if (!name || allCategories.includes(name)) return;
+    setCustomCategories((prev) => [...prev, name]);
+    setNewCategoryName('');
+  };
+
+  const handleRenameCategoryStart = (cat: string) => {
+    setRenamingCategory(cat);
+    setRenameCategoryValue(cat);
+    setTimeout(() => renameCategoryRef.current?.focus(), 0);
+  };
+
+  const handleRenameCategoryCommit = async () => {
+    if (!renamingCategory || !renameCategoryValue.trim()) {
+      setRenamingCategory(null);
+      return;
+    }
+    const oldName = renamingCategory;
+    const newName = renameCategoryValue.trim();
+    if (oldName === newName) {
+      setRenamingCategory(null);
+      return;
+    }
+    setCategoryBusy(true);
+    try {
+      // Find all items in the old category and batch-update them
+      const affected = items.filter((i) => i.category === oldName);
+      await Promise.all(
+        affected.map((item) =>
+          apiFetch<{ item: Item }>(`/items/${item.id}`, {
+            method: 'PUT',
+            body: { category: newName },
+          }),
+        ),
+      );
+      // Update local items state
+      setItems((prev) =>
+        prev.map((i) =>
+          i.category === oldName ? { ...i, category: newName as Category } : i,
+        ),
+      );
+      // Update custom categories list
+      setCustomCategories((prev) =>
+        prev.map((c) => (c === oldName ? newName : c)),
+      );
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to rename category');
+    } finally {
+      setCategoryBusy(false);
+      setRenamingCategory(null);
+    }
+  };
+
   // ── Render ────────────────────────────────────────────────────────
 
   if (loading) {
@@ -350,7 +427,7 @@ export default function ParManagement() {
                 onChange={(e) => setNewCategory(e.target.value as Category)}
                 className="px-3 py-2 rounded-lg bg-surface border border-border-subtle text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-dcvfd-accent"
               >
-                {CATEGORIES.map((cat) => (
+                {allCategories.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
                   </option>
@@ -413,6 +490,100 @@ export default function ParManagement() {
         )}
       </div>
 
+      {/* Manage Categories toggle */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setShowCategoryPanel(!showCategoryPanel)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-border-subtle text-zinc-300 hover:text-zinc-100 hover:bg-surface-raised transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+          </svg>
+          Manage Categories
+          <svg
+            className={`w-3 h-3 transition-transform ${showCategoryPanel ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Category management panel */}
+      {showCategoryPanel && (
+        <div className="p-4 rounded-lg bg-surface-raised border border-border-subtle space-y-3">
+          <h3 className="text-sm font-medium text-zinc-200">Categories</h3>
+          <p className="text-xs text-zinc-500">Click a category name to rename it. Renaming updates all items in that category.</p>
+
+          {/* Category pills */}
+          <div className="flex flex-wrap gap-2">
+            {allCategories.map((cat) => {
+              const count = items.filter((i) => i.category === cat).length;
+              const isRenaming = renamingCategory === cat;
+              return (
+                <div key={cat} className="flex items-center">
+                  {isRenaming ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        ref={renameCategoryRef}
+                        type="text"
+                        value={renameCategoryValue}
+                        onChange={(e) => setRenameCategoryValue(e.target.value)}
+                        onBlur={handleRenameCategoryCommit}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleRenameCategoryCommit();
+                          if (e.key === 'Escape') setRenamingCategory(null);
+                        }}
+                        disabled={categoryBusy}
+                        className="px-2 py-1 rounded-lg text-xs bg-surface border border-dcvfd-accent text-zinc-100 focus:outline-none w-28"
+                      />
+                      {categoryBusy && (
+                        <span className="text-[10px] text-amber-400">Saving...</span>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleRenameCategoryStart(cat)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-dcvfd/30 text-zinc-200 hover:bg-dcvfd/50 hover:text-white border border-dcvfd/40 transition-colors"
+                      title="Click to rename"
+                    >
+                      {cat}
+                      <span className="text-zinc-500">{count}</span>
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Add new category */}
+          <div className="flex items-center gap-2 pt-1">
+            <input
+              type="text"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="New category name"
+              className="flex-1 max-w-xs px-3 py-1.5 rounded-lg bg-surface border border-border-subtle text-zinc-100 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-dcvfd-accent"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAddCategory();
+              }}
+            />
+            <button
+              onClick={handleAddCategory}
+              disabled={!newCategoryName.trim() || allCategories.includes(newCategoryName.trim())}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg bg-dcvfd-accent text-white hover:bg-dcvfd-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Two-column category grid on desktop, single column on mobile */}
       <div className="md:grid md:grid-cols-2 md:gap-3 space-y-3 md:space-y-0">
         {Object.entries(groupedByCategory).map(([cat, catItems]) => {
@@ -470,6 +641,7 @@ export default function ParManagement() {
                       editingName={editingName}
                       renameInputRef={renameInputRef}
                       confirmDeleteId={confirmDeleteId}
+                      categoryList={allCategories}
                       onParChange={handleParChange}
                       onToggleActive={handleToggleActive}
                       onRenameStart={handleRenameStart}
@@ -506,6 +678,7 @@ interface ItemRowProps {
   editingName: string;
   renameInputRef: React.RefObject<HTMLInputElement | null>;
   confirmDeleteId: number | null;
+  categoryList: string[];
   onParChange: (itemId: number, stationId: number, value: string) => void;
   onToggleActive: (item: Item) => void;
   onRenameStart: (item: Item) => void;
@@ -523,6 +696,7 @@ function ItemRow({
   editingName,
   renameInputRef,
   confirmDeleteId,
+  categoryList,
   onParChange,
   onToggleActive,
   onRenameStart,
@@ -582,7 +756,7 @@ function ItemRow({
             autoFocus
             className="shrink-0 text-[10px] px-1 py-0.5 rounded bg-surface border border-border-subtle text-zinc-300 focus:outline-none focus:ring-1 focus:ring-dcvfd-accent"
           >
-            {CATEGORIES.map((cat) => (
+            {categoryList.map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
               </option>
