@@ -129,7 +129,6 @@ export default function ParManagement() {
           if (existing) {
             next.set(key, { ...existing, target_count: targetCount });
           } else {
-            // Create a placeholder entry
             next.set(key, {
               id: 0,
               item_id: itemId,
@@ -186,12 +185,6 @@ export default function ParManagement() {
     });
 
     debouncedSave(itemId, stationId, num);
-  };
-
-  const handleCheckboxToggle = async (itemId: number, stationId: number, currentCount: number) => {
-    // If stocked (count > 0), set to 0. If not stocked, set to 1 as default.
-    const newCount = currentCount > 0 ? 0 : 1;
-    await saveTarget(itemId, stationId, newCount);
   };
 
   const handleToggleActive = async (item: Item) => {
@@ -281,7 +274,7 @@ export default function ParManagement() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -401,54 +394,54 @@ export default function ParManagement() {
         )}
       </div>
 
-      {/* Grid */}
-      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className="min-w-[700px]">
-          {/* Sticky header */}
-          <div className="grid grid-cols-[1fr_auto] gap-0 items-center sticky top-0 z-10 bg-surface rounded-t-lg border border-border-subtle">
-            <div className="px-3 py-2.5 text-xs font-medium text-zinc-400 uppercase tracking-wider">
-              Item
-            </div>
-            <div className="grid grid-cols-4 gap-0">
-              {STATION_IDS.map((sid) => (
-                <div
-                  key={sid}
-                  className="w-[110px] px-2 py-2.5 text-center text-xs font-medium text-zinc-400 uppercase tracking-wider border-l border-border-subtle"
+      {/* Two-column category grid on desktop, single column on mobile */}
+      <div className="md:grid md:grid-cols-2 md:gap-3 space-y-3 md:space-y-0">
+        {Object.entries(groupedByCategory).map(([cat, catItems]) => {
+          const isCollapsed = collapsedCategories.has(cat);
+          return (
+            <div
+              key={cat}
+              className="rounded-lg border border-border-subtle bg-surface overflow-hidden"
+            >
+              {/* Category header */}
+              <button
+                onClick={() => toggleCategory(cat)}
+                className="w-full flex items-center gap-2 px-3 py-2 bg-surface-raised text-left hover:bg-zinc-800/50 transition-colors"
+              >
+                <svg
+                  className={`w-3 h-3 text-zinc-400 transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <div>Stn {sid}</div>
-                  <div className="text-[10px] text-zinc-500 normal-case tracking-normal">
-                    {STATION_NICKNAMES[sid]}
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="text-sm font-medium text-zinc-200">{cat}</span>
+                <span className="text-xs text-zinc-500">
+                  {catItems.length} item{catItems.length !== 1 ? 's' : ''}
+                </span>
+              </button>
+
+              {/* Station column headers */}
+              {!isCollapsed && (
+                <>
+                  <div className="grid grid-cols-[1fr_repeat(4,56px)] items-center border-b border-border-subtle px-2 py-1">
+                    <div className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider pl-1">
+                      Item
+                    </div>
+                    {STATION_IDS.map((sid) => (
+                      <div
+                        key={sid}
+                        className="text-center text-[10px] font-medium text-zinc-500 uppercase tracking-wider leading-tight"
+                        title={STATION_NICKNAMES[sid]}
+                      >
+                        {sid}
+                      </div>
+                    ))}
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Category groups */}
-          {Object.entries(groupedByCategory).map(([cat, catItems]) => {
-            const isCollapsed = collapsedCategories.has(cat);
-            return (
-              <div key={cat} className="border-x border-border-subtle">
-                {/* Category header */}
-                <button
-                  onClick={() => toggleCategory(cat)}
-                  className="w-full flex items-center gap-2 px-3 py-2 bg-surface-overlay border-y border-border-subtle text-left hover:bg-zinc-800/50 transition-colors"
-                >
-                  <svg
-                    className={`w-3.5 h-3.5 text-zinc-400 transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                  <span className="text-sm font-medium text-zinc-200">{cat}</span>
-                  <span className="text-xs text-zinc-500">({catItems.length})</span>
-                </button>
-
-                {/* Item rows */}
-                {!isCollapsed &&
-                  catItems.map((item) => (
+                  {/* Item rows */}
+                  {catItems.map((item) => (
                     <ItemRow
                       key={item.id}
                       item={item}
@@ -458,20 +451,17 @@ export default function ParManagement() {
                       editingName={editingName}
                       renameInputRef={renameInputRef}
                       onParChange={handleParChange}
-                      onCheckboxToggle={handleCheckboxToggle}
                       onToggleActive={handleToggleActive}
                       onRenameStart={handleRenameStart}
                       onRenameChange={setEditingName}
                       onRenameCommit={handleRenameCommit}
                     />
                   ))}
-              </div>
-            );
-          })}
-
-          {/* Bottom border */}
-          <div className="border-b border-x border-border-subtle rounded-b-lg h-1" />
-        </div>
+                </>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Empty state */}
@@ -480,22 +470,6 @@ export default function ParManagement() {
           {search ? 'No items match your search.' : 'No items found. Add one to get started.'}
         </div>
       )}
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-xs text-zinc-500 pt-2">
-        <div className="flex items-center gap-1.5">
-          <input type="checkbox" checked readOnly className="w-3 h-3 accent-dcvfd-accent" />
-          <span>Item stocked at station</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-amber-500/20 border border-amber-500/40" />
-          <span>Saving...</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-zinc-600 line-through">Item Name</span>
-          <span>= Inactive (soft-deleted)</span>
-        </div>
-      </div>
     </div>
   );
 }
@@ -510,7 +484,6 @@ interface ItemRowProps {
   editingName: string;
   renameInputRef: React.RefObject<HTMLInputElement | null>;
   onParChange: (itemId: number, stationId: number, value: string) => void;
-  onCheckboxToggle: (itemId: number, stationId: number, currentCount: number) => void;
   onToggleActive: (item: Item) => void;
   onRenameStart: (item: Item) => void;
   onRenameChange: (name: string) => void;
@@ -525,7 +498,6 @@ function ItemRow({
   editingName,
   renameInputRef,
   onParChange,
-  onCheckboxToggle,
   onToggleActive,
   onRenameStart,
   onRenameChange,
@@ -535,12 +507,12 @@ function ItemRow({
 
   return (
     <div
-      className={`grid grid-cols-[1fr_auto] gap-0 items-center border-b border-border-subtle last:border-b-0 ${
+      className={`grid grid-cols-[1fr_repeat(4,56px)] items-center px-2 py-1 border-b border-border-subtle last:border-b-0 ${
         !item.is_active ? 'opacity-50' : ''
       } hover:bg-surface-overlay/50 transition-colors`}
     >
       {/* Item name cell */}
-      <div className="flex items-center gap-2 px-3 py-1.5 min-w-0">
+      <div className="flex items-center gap-1 min-w-0 pr-1">
         {isEditing ? (
           <input
             ref={renameInputRef}
@@ -552,12 +524,12 @@ function ItemRow({
               if (e.key === 'Enter') onRenameCommit();
               if (e.key === 'Escape') onRenameCommit();
             }}
-            className="flex-1 min-w-0 px-2 py-0.5 rounded bg-surface border border-dcvfd-accent text-sm text-zinc-100 focus:outline-none"
+            className="flex-1 min-w-0 px-1.5 py-0.5 rounded bg-surface border border-dcvfd-accent text-xs text-zinc-100 focus:outline-none"
           />
         ) : (
           <button
             onClick={() => onRenameStart(item)}
-            className={`flex-1 min-w-0 text-left text-sm truncate ${
+            className={`flex-1 min-w-0 text-left text-xs truncate ${
               item.is_active
                 ? 'text-zinc-200 hover:text-dcvfd-accent'
                 : 'text-zinc-500 line-through'
@@ -571,62 +543,50 @@ function ItemRow({
         {/* Active toggle */}
         <button
           onClick={() => onToggleActive(item)}
-          className={`shrink-0 p-1 rounded transition-colors ${
+          className={`shrink-0 p-0.5 rounded transition-colors ${
             item.is_active
-              ? 'text-zinc-500 hover:text-red-400'
+              ? 'text-zinc-600 hover:text-red-400'
               : 'text-emerald-600 hover:text-emerald-400'
           }`}
           title={item.is_active ? 'Deactivate item' : 'Reactivate item'}
         >
           {item.is_active ? (
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           ) : (
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
           )}
         </button>
       </div>
 
-      {/* Station cells */}
-      <div className="grid grid-cols-4 gap-0">
-        {STATION_IDS.map((sid) => {
-          const key = targetKey(item.id, sid);
-          const target = allTargets.get(key);
-          const count = target?.target_count ?? 0;
-          const isSaving = savingCells.has(key);
-          const isStocked = count > 0;
+      {/* Station cells — 4 compact numeric inputs */}
+      {STATION_IDS.map((sid) => {
+        const key = targetKey(item.id, sid);
+        const target = allTargets.get(key);
+        const count = target?.target_count ?? 0;
+        const isSaving = savingCells.has(key);
 
-          return (
-            <div
-              key={sid}
-              className={`w-[110px] flex items-center justify-center gap-1.5 px-2 py-1.5 border-l border-border-subtle ${
-                isSaving ? 'bg-amber-500/5' : ''
+        return (
+          <div
+            key={sid}
+            className={`flex items-center justify-center ${isSaving ? 'bg-amber-500/5' : ''}`}
+          >
+            <input
+              type="text"
+              inputMode="numeric"
+              value={count === 0 ? '' : String(count)}
+              onChange={(e) => onParChange(item.id, sid, e.target.value)}
+              className={`w-12 px-1 py-0.5 rounded text-center text-xs font-mono bg-surface border text-zinc-100 focus:outline-none focus:ring-1 focus:ring-dcvfd-accent ${
+                isSaving ? 'border-amber-500/40' : 'border-border-subtle'
               }`}
-            >
-              <input
-                type="checkbox"
-                checked={isStocked}
-                onChange={() => onCheckboxToggle(item.id, sid, count)}
-                className="w-3.5 h-3.5 accent-dcvfd-accent shrink-0 cursor-pointer"
-                title={isStocked ? 'Remove from station' : 'Add to station'}
-              />
-              <input
-                type="text"
-                inputMode="numeric"
-                value={count === 0 && !isStocked ? '' : String(count)}
-                onChange={(e) => onParChange(item.id, sid, e.target.value)}
-                className={`w-12 px-1.5 py-0.5 rounded text-center text-sm font-mono bg-surface border text-zinc-100 focus:outline-none focus:ring-1 focus:ring-dcvfd-accent ${
-                  isSaving ? 'border-amber-500/40' : 'border-border-subtle'
-                }`}
-                placeholder="0"
-              />
-            </div>
-          );
-        })}
-      </div>
+              placeholder="0"
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }
