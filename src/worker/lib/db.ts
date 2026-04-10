@@ -208,7 +208,7 @@ export async function submitInventory(
   return { sessionId, itemCount: template.length, itemsShort, orderId };
 }
 
-function formatPickList(
+export function formatPickList(
   stationName: string,
   shortItems: { item_name: string; category: string; actual: number; target: number; need: number }[],
 ): string {

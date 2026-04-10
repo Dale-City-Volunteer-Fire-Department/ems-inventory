@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Order, OrderStatus, Category } from '@shared/types';
+import type { OrdersResponse } from '@shared/api-responses';
 import { useStations, STATION_NICKNAMES } from '../hooks/useStations';
 import { useAuth } from '../hooks/useAuth';
 import { apiFetch } from '../hooks/useApi';
@@ -83,7 +84,7 @@ export default function LogisticsDashboard() {
         });
       } catch {
         try {
-          const data = await apiFetch<{ orders: Order[]; count: number }>('/orders');
+          const data = await apiFetch<OrdersResponse>('/orders');
           setOrders(data.orders);
         } catch {
           // leave optimistic state
@@ -118,7 +119,7 @@ export default function LogisticsDashboard() {
   }, [stations]);
 
   useEffect(() => {
-    apiFetch<{ orders: Order[]; count: number }>('/orders')
+    apiFetch<OrdersResponse>('/orders')
       .then((data) => setOrders(data.orders))
       .catch(() => setOrders([]));
   }, []);

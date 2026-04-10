@@ -16,6 +16,15 @@ import { requireAuth } from './middleware/auth';
 import type { Session } from './middleware/auth';
 import { requireRole } from './middleware/rbac';
 import type { UserRole } from '../shared/types';
+import type {
+  HealthResponse,
+  InventorySessionsResponse,
+  InventoryHistoryResponse,
+  UsersResponse,
+  UserResponse,
+  ItemResponse,
+  DashboardStatsResponse,
+} from '@shared/api-responses';
 
 // ── CSRF Origin verification ────────────────────────────────────────
 const ALLOWED_ORIGINS = [
@@ -31,7 +40,7 @@ const CSRF_EXEMPT_PATHS = [
   '/api/auth/magic-link/verify',
 ];
 
-function verifyCsrfOrigin(request: Request): Response | null {
+export function verifyCsrfOrigin(request: Request): Response | null {
   const method = request.method;
   // Only check mutating methods
   if (method !== 'POST' && method !== 'PUT' && method !== 'DELETE' && method !== 'PATCH') {
@@ -92,7 +101,7 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
 
   // ── Health check (public) ─────────────────────────────────────────
   if (path === '/api/health' && method === 'GET') {
-    return ok({ status: 'ok', app: env.APP_NAME, timestamp: new Date().toISOString() });
+    return ok<HealthResponse>({ status: 'ok', app: env.APP_NAME, timestamp: new Date().toISOString() });
   }
 
   // ── Auth routes ───────────────────────────────────────────────────
@@ -290,7 +299,7 @@ async function handleUpdateItemById(request: Request, env: Env, path: string): P
       .run();
 
     const updated = await env.DB.prepare('SELECT * FROM items WHERE id = ?').bind(id).first();
-    return ok({ item: updated });
+    return ok<ItemResponse>({ item: updated as unknown as ItemResponse['item'] });
   } catch (err) {
     console.error('[updateItemById]', err);
     return serverError('Failed to update item');
@@ -397,7 +406,7 @@ async function handleGetHistory(request: Request, env: Env): Promise<Response> {
       offset,
     });
 
-    return ok({ history, count: history.length });
+    return ok<InventoryHistoryResponse>({ history, count: history.length });
   } catch (err) {
     console.error('[getHistory]', err);
     return serverError('Failed to get history');
@@ -421,7 +430,7 @@ async function handleGetSessions(request: Request, env: Env): Promise<Response> 
       offset,
     });
 
-    return ok({ sessions, count: sessions.length });
+    return ok<InventorySessionsResponse>({ sessions, count: sessions.length });
   } catch (err) {
     console.error('[getSessions]', err);
     return serverError('Failed to get sessions');
@@ -495,7 +504,7 @@ async function handleGetUsers(request: Request, env: Env): Promise<Response> {
       last_login_at: u.last_login_at,
     }));
 
-    return ok({ users, count: users.length });
+    return ok<UsersResponse>({ users, count: users.length });
   } catch (err) {
     console.error('[getUsers]', err);
     return serverError('Failed to get users');
@@ -546,11 +555,12 @@ async function handleUpdateUserRole(request: Request, env: Env, path: string, se
         station_name: string | null;
       }>();
 
-    return ok({
-      user: updated ? {
+    if (!updated) return serverError('Failed to retrieve updated user');
+    return ok<UserResponse>({
+      user: {
         ...updated,
         is_active: updated.is_active === 1,
-      } : null,
+      },
     });
   } catch (err) {
     console.error('[updateUserRole]', err);
@@ -606,11 +616,12 @@ async function handleUpdateUserActive(request: Request, env: Env, path: string, 
         station_name: string | null;
       }>();
 
-    return ok({
-      user: updated ? {
+    if (!updated) return serverError('Failed to retrieve updated user');
+    return ok<UserResponse>({
+      user: {
         ...updated,
         is_active: updated.is_active === 1,
-      } : null,
+      },
     });
   } catch (err) {
     console.error('[updateUserActive]', err);
@@ -650,7 +661,7 @@ async function handleGetDashboardStats(env: Env): Promise<Response> {
     const sessionMap = new Map(latestSessions.results.map((s) => [s.station_id, s]));
 
     // 2. Shortages from latest sessions
-    let shortagesByStation = new Map<number, { itemName: string; category: string; target: number; actual: number; delta: number }[]>();
+    const shortagesByStation = new Map<number, { itemName: string; category: string; target: number; actual: number; delta: number }[]>();
     let categoryShortages: { category: string; count: number }[] = [];
 
     if (sessionIds.length > 0) {
@@ -761,7 +772,7 @@ async function handleGetDashboardStats(env: Env): Promise<Response> {
       itemsShort: r.items_short,
     }));
 
-    return ok({
+    return ok<DashboardStatsResponse>({
       stations,
       categoryShortages,
       orderPipeline,

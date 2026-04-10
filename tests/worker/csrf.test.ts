@@ -1,51 +1,5 @@
 import { describe, it, expect } from 'vitest';
-
-// ── CSRF Origin verification (mirrors index.ts verifyCsrfOrigin) ────
-//
-// The verifyCsrfOrigin function is not exported from index.ts, so we
-// replicate the exact logic here for direct unit testing. The function
-// is small and self-contained, making this a reliable approach.
-
-const ALLOWED_ORIGINS = [
-  'https://emsinventory.dcvfd.org',
-  'http://localhost:5173',
-  'http://localhost:8787',
-  'http://127.0.0.1:5173',
-];
-
-const CSRF_EXEMPT_PATHS = [
-  '/api/auth/entra/callback',
-  '/api/auth/magic-link/verify',
-];
-
-function verifyCsrfOrigin(request: Request): Response | null {
-  const method = request.method;
-  // Only check mutating methods
-  if (method !== 'POST' && method !== 'PUT' && method !== 'DELETE' && method !== 'PATCH') {
-    return null;
-  }
-
-  const url = new URL(request.url);
-  // Only check /api/ routes
-  if (!url.pathname.startsWith('/api/')) {
-    return null;
-  }
-
-  // Exempt auth callback routes
-  if (CSRF_EXEMPT_PATHS.includes(url.pathname)) {
-    return null;
-  }
-
-  const origin = request.headers.get('Origin');
-  if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
-    return new Response(JSON.stringify({ error: 'Invalid or missing Origin header' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  return null;
-}
+import { verifyCsrfOrigin } from '../../src/worker/index';
 
 // ── Helper: build a Request with specific method, path, and origin ──
 

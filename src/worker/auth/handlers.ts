@@ -2,6 +2,7 @@ import type { Env } from '../types';
 import { destroySession, parseSessionCookie, buildClearSessionCookie } from './session';
 import { validateSession } from '../middleware/auth';
 import { ok, unauthorized } from '../lib/response';
+import type { AuthMeResponse } from '@shared/api-responses';
 
 /**
  * GET /api/auth/me
@@ -15,7 +16,7 @@ export async function handleAuthMe(request: Request, env: Env): Promise<Response
     return unauthorized('Authentication required');
   }
 
-  return ok({
+  return ok<AuthMeResponse>({
     userId: session.userId,
     email: session.email,
     name: session.name,

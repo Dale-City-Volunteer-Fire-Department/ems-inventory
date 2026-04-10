@@ -1,21 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { UserRole } from '@shared/types';
+import type { UserRecord, UsersResponse, UserResponse } from '@shared/api-responses';
 import { apiFetch } from '../hooks/useApi';
 import { useAuth } from '../hooks/useAuth';
-
-interface UserRecord {
-  id: number;
-  email: string | null;
-  name: string;
-  role: UserRole;
-  station_id: number | null;
-  station_name: string | null;
-  auth_method: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  last_login_at: string | null;
-}
 
 export default function AdminPanel() {
   const { user: currentUser } = useAuth();
@@ -32,7 +19,7 @@ export default function AdminPanel() {
       const params = new URLSearchParams();
       if (roleFilter !== 'all') params.set('role', roleFilter);
       const qs = params.toString();
-      const data = await apiFetch<{ users: UserRecord[]; count: number }>(`/users${qs ? `?${qs}` : ''}`);
+      const data = await apiFetch<UsersResponse>(`/users${qs ? `?${qs}` : ''}`);
       setUsers(data.users);
       setError(null);
     } catch (err) {
@@ -48,7 +35,7 @@ export default function AdminPanel() {
 
   const handleChangeRole = async (userId: number, newRole: UserRole) => {
     try {
-      const data = await apiFetch<{ user: UserRecord }>(`/users/${userId}/role`, {
+      const data = await apiFetch<UserResponse>(`/users/${userId}/role`, {
         method: 'PUT',
         body: { role: newRole },
       });
@@ -68,7 +55,7 @@ export default function AdminPanel() {
     }
     setConfirmDeactivate(null);
     try {
-      const data = await apiFetch<{ user: UserRecord }>(`/users/${userId}/active`, {
+      const data = await apiFetch<UserResponse>(`/users/${userId}/active`, {
         method: 'PUT',
         body: { is_active: newActive },
       });
