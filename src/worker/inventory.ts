@@ -90,8 +90,7 @@ export async function handleSubmitInventory(request: Request, env: Env): Promise
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to submit inventory';
-    // Missing counts is a validation error, not a server error
-    if (message.startsWith('Missing counts')) {
+    if (message.startsWith('At least one')) {
       return badRequest(message);
     }
     return serverError(message);

@@ -71,7 +71,7 @@ export function useInventory(stationId: number | null) {
     return grouped;
   }, [items]);
 
-  const canSubmit = progress.total > 0 && progress.remaining === 0;
+  const canSubmit = progress.entered > 0;
 
   const submit = useCallback(async () => {
     if (!stationId || !canSubmit) return;

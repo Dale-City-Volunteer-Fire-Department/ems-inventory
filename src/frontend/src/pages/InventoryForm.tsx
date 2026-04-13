@@ -154,9 +154,11 @@ export default function InventoryForm({ station, onChangeStation }: InventoryFor
               Submitting...
             </span>
           ) : canSubmit ? (
-            'Submit Inventory'
+            progress.remaining > 0
+              ? `Submit ${progress.entered} of ${progress.total} Items`
+              : 'Submit Inventory'
           ) : (
-            `${progress.remaining} items remaining`
+            'Enter at least 1 item'
           )}
         </button>
       </div>
@@ -171,10 +173,16 @@ export default function InventoryForm({ station, onChangeStation }: InventoryFor
           </div>
           <h2 className="text-lg font-bold text-white">Submit Inventory?</h2>
         </div>
-        <p className="text-sm text-zinc-300 text-center mb-5">
-          {station.name} &mdash; {progress.total} items
+        <p className="text-sm text-zinc-300 text-center mb-2">
+          {station.name} &mdash; {progress.entered} of {progress.total} items entered
           {shortages.length > 0 && <span className="text-ems-red"> ({shortages.length} short)</span>}
         </p>
+        {progress.remaining > 0 && (
+          <p className="text-xs text-amber-400 text-center mb-5">
+            {progress.remaining} item{progress.remaining !== 1 ? 's' : ''} not counted &mdash; they will be skipped
+          </p>
+        )}
+        {progress.remaining === 0 && <div className="mb-3" />}
         <div className="flex gap-3">
           <button
             type="button"
