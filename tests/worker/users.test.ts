@@ -65,10 +65,7 @@ describe('User Management Endpoints', () => {
       ]);
 
       const db = mock.asD1();
-      const result = await db
-        .prepare('SELECT u.id FROM users u WHERE u.role = ?')
-        .bind('crew')
-        .all();
+      const result = await db.prepare('SELECT u.id FROM users u WHERE u.role = ?').bind('crew').all();
 
       expect(result.results).toHaveLength(1);
     });
@@ -92,10 +89,7 @@ describe('User Management Endpoints', () => {
       ]);
 
       const db = mock.asD1();
-      const result = await db
-        .prepare('SELECT u.id FROM users u WHERE u.is_active = ?')
-        .bind(1)
-        .all();
+      const result = await db.prepare('SELECT u.id FROM users u WHERE u.is_active = ?').bind(1).all();
 
       expect(result.results).toHaveLength(1);
     });
@@ -235,10 +229,7 @@ describe('User Management Endpoints', () => {
       });
 
       const db = mock.asD1();
-      await db
-        .prepare(`UPDATE users SET is_active = ?, updated_at = datetime('now') WHERE id = ?`)
-        .bind(0, 5)
-        .run();
+      await db.prepare(`UPDATE users SET is_active = ?, updated_at = datetime('now') WHERE id = ?`).bind(0, 5).run();
 
       expect(capturedBinds).toEqual([0, 5]);
     });

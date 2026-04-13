@@ -47,7 +47,11 @@ export async function handleUpdateTarget(request: Request, env: Env): Promise<Re
     }
 
     await updateStockTarget(env.DB, body.itemId, body.stationId, body.targetCount);
-    return ok<StockTargetUpdateResponse>({ itemId: body.itemId, stationId: body.stationId, targetCount: body.targetCount });
+    return ok<StockTargetUpdateResponse>({
+      itemId: body.itemId,
+      stationId: body.stationId,
+      targetCount: body.targetCount,
+    });
   } catch (err) {
     return serverError(err instanceof Error ? err.message : 'Failed to update stock target');
   }

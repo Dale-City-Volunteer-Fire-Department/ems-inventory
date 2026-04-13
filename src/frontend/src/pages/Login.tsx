@@ -37,7 +37,10 @@ function MainButtons({ onSelect }: { onSelect: (v: View) => void }) {
     <div className="w-full space-y-3">
       <a
         href="/api/auth/entra/login"
-        onClick={(e) => { e.preventDefault(); window.location.href = '/api/auth/entra/login'; }}
+        onClick={(e) => {
+          e.preventDefault();
+          window.location.href = '/api/auth/entra/login';
+        }}
         className="group flex w-full items-center justify-center gap-3 rounded-xl bg-dcvfd px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-dcvfd/20 hover:bg-dcvfd-light hover:shadow-dcvfd/30 active:bg-dcvfd-dark active:scale-[0.98] min-h-[52px] transition-all"
       >
         <svg width="20" height="20" viewBox="0 0 21 21" fill="none" className="shrink-0">
@@ -109,7 +112,12 @@ function MagicLinkForm({ onBack }: { onBack: () => void }) {
       <div className="w-full text-center space-y-4">
         <div className="mx-auto h-16 w-16 rounded-full bg-dcvfd/20 border border-dcvfd-accent/30 flex items-center justify-center">
           <svg className="h-8 w-8 text-dcvfd-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+            />
           </svg>
         </div>
         <div>
@@ -118,7 +126,11 @@ function MagicLinkForm({ onBack }: { onBack: () => void }) {
             A sign-in link was sent to <span className="text-white font-medium">{email}</span>
           </p>
         </div>
-        <button type="button" onClick={onBack} className="text-sm text-zinc-500 hover:text-zinc-300 py-2 transition-colors">
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-sm text-zinc-500 hover:text-zinc-300 py-2 transition-colors"
+        >
           &larr; Back to sign in
         </button>
       </div>
@@ -140,9 +152,7 @@ function MagicLinkForm({ onBack }: { onBack: () => void }) {
       />
 
       {error && (
-        <div className="rounded-lg bg-red-950/50 border border-red-900/50 px-3 py-2 text-sm text-red-300">
-          {error}
-        </div>
+        <div className="rounded-lg bg-red-950/50 border border-red-900/50 px-3 py-2 text-sm text-red-300">{error}</div>
       )}
 
       <button
@@ -157,7 +167,11 @@ function MagicLinkForm({ onBack }: { onBack: () => void }) {
         )}
       </button>
 
-      <button type="button" onClick={onBack} className="w-full text-sm text-zinc-500 hover:text-zinc-300 py-2 transition-colors">
+      <button
+        type="button"
+        onClick={onBack}
+        className="w-full text-sm text-zinc-500 hover:text-zinc-300 py-2 transition-colors"
+      >
         &larr; Back to sign in
       </button>
     </form>

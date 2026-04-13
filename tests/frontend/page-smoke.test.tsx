@@ -10,8 +10,7 @@ vi.mock('react-router-dom', () => ({
   useLocation: () => ({ pathname: '/par' }),
   useNavigate: () => vi.fn(),
   BrowserRouter: ({ children }: { children: React.ReactNode }) => children,
-  Link: ({ children, to }: { children: React.ReactNode; to: string }) =>
-    createElement('a', { href: to }, children),
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) => createElement('a', { href: to }, children),
 }));
 
 // Mock useAuth
@@ -56,9 +55,7 @@ vi.mock('../../src/frontend/src/hooks/useStations', () => ({
     clearStation: vi.fn(),
   }),
   useStationsApi: () => ({
-    stations: [
-      { id: 10, name: 'Station 10', code: 'FS10', is_active: true },
-    ],
+    stations: [{ id: 10, name: 'Station 10', code: 'FS10', is_active: true }],
     loading: false,
   }),
   STATION_NICKNAMES: {
@@ -120,9 +117,7 @@ describe('Page smoke tests', () => {
   });
 
   it('StationSelect renders with mock stations', () => {
-    expect(() =>
-      render(createElement(StationSelect, { onSelect: vi.fn() })),
-    ).not.toThrow();
+    expect(() => render(createElement(StationSelect, { onSelect: vi.fn() }))).not.toThrow();
   });
 
   it('InventoryForm renders with mock station prop', () => {

@@ -24,7 +24,9 @@ export default function StationSelect({ onSelect }: StationSelectProps) {
             className="group relative flex flex-col items-center justify-center rounded-2xl bg-surface-raised border border-border-subtle p-6 min-h-[130px] transition-all hover:border-dcvfd-accent/50 hover:bg-surface-overlay hover:shadow-lg hover:shadow-dcvfd/10 active:scale-[0.97]"
           >
             <div className="absolute top-3 right-3 h-2 w-2 rounded-full bg-zinc-700 group-hover:bg-dcvfd-accent transition-colors" />
-            <span className="text-4xl font-bold text-white group-hover:text-dcvfd-accent transition-colors">{station.id}</span>
+            <span className="text-4xl font-bold text-white group-hover:text-dcvfd-accent transition-colors">
+              {station.id}
+            </span>
             <span className="text-sm text-zinc-400 mt-1.5 group-hover:text-zinc-300 transition-colors">
               {STATION_NICKNAMES[station.id] ?? station.name}
             </span>
