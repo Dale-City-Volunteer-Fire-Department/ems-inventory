@@ -60,7 +60,7 @@ export default function LogisticsDashboard() {
   const handleStatusTransition = useCallback(
     async (orderId: number, action: 'start' | 'fill') => {
       const newStatus: OrderStatus = action === 'start' ? 'in_progress' : 'filled';
-      const filledBy = action === 'fill' ? user?.name ?? 'Unknown' : undefined;
+      const filledBy = action === 'fill' ? (user?.name ?? 'Unknown') : undefined;
 
       setOrders((prev) =>
         prev.map((o) =>
@@ -168,14 +168,18 @@ export default function LogisticsDashboard() {
             type="button"
             onClick={() => setTab(t.id)}
             className={`shrink-0 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${
-              tab === t.id ? 'border-dcvfd-accent text-dcvfd-accent' : 'border-transparent text-zinc-400 hover:text-white'
+              tab === t.id
+                ? 'border-dcvfd-accent text-dcvfd-accent'
+                : 'border-transparent text-zinc-400 hover:text-white'
             }`}
           >
             {t.label}
             {t.count !== undefined && t.count > 0 && (
-              <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs ${
-                tab === t.id ? 'bg-dcvfd-accent/20 text-dcvfd-accent' : 'bg-zinc-800 text-zinc-500'
-              }`}>
+              <span
+                className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs ${
+                  tab === t.id ? 'bg-dcvfd-accent/20 text-dcvfd-accent' : 'bg-zinc-800 text-zinc-500'
+                }`}
+              >
                 {t.count}
               </span>
             )}
@@ -300,12 +304,14 @@ export default function LogisticsDashboard() {
         {!loading && tab === 'orders' && (
           <div>
             <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
-              {([
-                { key: 'all', label: 'All' },
-                { key: 'pending', label: 'Pending' },
-                { key: 'in_progress', label: 'In Progress' },
-                { key: 'filled', label: 'Filled' },
-              ] as const).map((f) => (
+              {(
+                [
+                  { key: 'all', label: 'All' },
+                  { key: 'pending', label: 'Pending' },
+                  { key: 'in_progress', label: 'In Progress' },
+                  { key: 'filled', label: 'Filled' },
+                ] as const
+              ).map((f) => (
                 <button
                   key={f.key}
                   type="button"
@@ -318,17 +324,14 @@ export default function LogisticsDashboard() {
                 >
                   {f.label}
                   {f.key !== 'all' && (
-                    <span className="ml-1.5 text-xs opacity-70">
-                      {orders.filter((o) => o.status === f.key).length}
-                    </span>
+                    <span className="ml-1.5 text-xs opacity-70">{orders.filter((o) => o.status === f.key).length}</span>
                   )}
                 </button>
               ))}
             </div>
 
             {(() => {
-              const filtered =
-                statusFilter === 'all' ? orders : orders.filter((o) => o.status === statusFilter);
+              const filtered = statusFilter === 'all' ? orders : orders.filter((o) => o.status === statusFilter);
 
               if (filtered.length === 0) {
                 return (
@@ -447,13 +450,27 @@ export default function LogisticsDashboard() {
         {confirmModal && (
           <div>
             <div className="text-center mb-4">
-              <div className={`mx-auto h-12 w-12 rounded-full flex items-center justify-center mb-3 ${
-                confirmModal.action === 'start' ? 'bg-blue-500/20' : 'bg-ems-green/20'
-              }`}>
-                <svg className={`h-6 w-6 ${confirmModal.action === 'start' ? 'text-blue-400' : 'text-ems-green'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={
-                    confirmModal.action === 'start' ? 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z' : 'M5 13l4 4L19 7'
-                  } />
+              <div
+                className={`mx-auto h-12 w-12 rounded-full flex items-center justify-center mb-3 ${
+                  confirmModal.action === 'start' ? 'bg-blue-500/20' : 'bg-ems-green/20'
+                }`}
+              >
+                <svg
+                  className={`h-6 w-6 ${confirmModal.action === 'start' ? 'text-blue-400' : 'text-ems-green'}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d={
+                      confirmModal.action === 'start'
+                        ? 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z'
+                        : 'M5 13l4 4L19 7'
+                    }
+                  />
                 </svg>
               </div>
               <h2 className="text-lg font-semibold text-white">
@@ -477,9 +494,7 @@ export default function LogisticsDashboard() {
                 type="button"
                 onClick={() => handleStatusTransition(confirmModal.orderId, confirmModal.action)}
                 className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-medium text-white active:scale-[0.98] transition-all ${
-                  confirmModal.action === 'start'
-                    ? 'bg-blue-600 hover:bg-blue-500'
-                    : 'bg-ems-green hover:bg-green-500'
+                  confirmModal.action === 'start' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-ems-green hover:bg-green-500'
                 }`}
               >
                 {confirmModal.action === 'start' ? 'Start' : 'Mark Filled'}
@@ -493,11 +508,13 @@ export default function LogisticsDashboard() {
 }
 
 function EmptyState({ icon, message, subtitle }: { icon: string; message: string; subtitle?: string }) {
-  const iconPath = {
-    check: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
-    list: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
-    inbox: 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4',
-  }[icon] ?? '';
+  const iconPath =
+    {
+      check: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+      list: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
+      inbox:
+        'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4',
+    }[icon] ?? '';
 
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">

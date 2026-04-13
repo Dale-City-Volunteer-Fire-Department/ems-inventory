@@ -67,17 +67,14 @@ async function callWorkerAuth(
   role: UserRole = 'admin',
 ): Promise<Response> {
   // Create a real session in mock KV
-  const { sessionId } = await createSession(
-    { SESSIONS: mockKv } as Env,
-    {
-      userId: 1,
-      email: 'admin@dcvfd.org',
-      name: 'Test Admin',
-      role,
-      stationId: null,
-      authMethod: 'entra_sso',
-    },
-  );
+  const { sessionId } = await createSession({ SESSIONS: mockKv } as Env, {
+    userId: 1,
+    email: 'admin@dcvfd.org',
+    name: 'Test Admin',
+    role,
+    stationId: null,
+    authMethod: 'entra_sso',
+  });
 
   // The auth middleware checks user is_active in the DB
   mockDb.onQuery('SELECT is_active FROM users WHERE id', () => [{ is_active: 1 }]);
@@ -112,8 +109,26 @@ function seedItems() {
 
 function seedStockTargets() {
   mockDb.onQuery('FROM stock_targets st JOIN items i', () => [
-    { id: 1, item_id: 1, station_id: 10, target_count: 4, item_name: 'NPA Kit', category: 'Airway', created_at: '2026-01-01', updated_at: '2026-01-01' },
-    { id: 2, item_id: 2, station_id: 10, target_count: 2, item_name: 'BVM Adult', category: 'Breathing', created_at: '2026-01-01', updated_at: '2026-01-01' },
+    {
+      id: 1,
+      item_id: 1,
+      station_id: 10,
+      target_count: 4,
+      item_name: 'NPA Kit',
+      category: 'Airway',
+      created_at: '2026-01-01',
+      updated_at: '2026-01-01',
+    },
+    {
+      id: 2,
+      item_id: 2,
+      station_id: 10,
+      target_count: 2,
+      item_name: 'BVM Adult',
+      category: 'Breathing',
+      created_at: '2026-01-01',
+      updated_at: '2026-01-01',
+    },
   ]);
 }
 
@@ -126,7 +141,17 @@ function seedInventoryTemplate() {
 
 function seedOrders() {
   mockDb.onQuery('FROM orders', () => [
-    { id: 1, session_id: 1, station_id: 10, status: 'pending', items_json: '[]', created_at: '2026-01-01', updated_at: '2026-01-01', filled_by: null, filled_at: null },
+    {
+      id: 1,
+      session_id: 1,
+      station_id: 10,
+      status: 'pending',
+      items_json: '[]',
+      created_at: '2026-01-01',
+      updated_at: '2026-01-01',
+      filled_by: null,
+      filled_at: null,
+    },
   ]);
 }
 
@@ -135,21 +160,62 @@ function seedUsers() {
   mockDb.onQuery('SELECT u.id, u.email, u.name, u.role', (_binds) => {
     // Differentiate between the user-list query and the single-user query
     return [
-      { id: 1, email: 'admin@dcvfd.org', name: 'Admin User', role: 'admin', station_id: null, auth_method: 'entra_sso', is_active: 1, created_at: '2026-01-01', updated_at: '2026-01-01', last_login_at: null, station_name: null },
-      { id: 2, email: 'crew@dcvfd.org', name: 'Crew Member', role: 'crew', station_id: 10, auth_method: 'pin', is_active: 1, created_at: '2026-01-01', updated_at: '2026-01-01', last_login_at: null, station_name: 'Station 10' },
+      {
+        id: 1,
+        email: 'admin@dcvfd.org',
+        name: 'Admin User',
+        role: 'admin',
+        station_id: null,
+        auth_method: 'entra_sso',
+        is_active: 1,
+        created_at: '2026-01-01',
+        updated_at: '2026-01-01',
+        last_login_at: null,
+        station_name: null,
+      },
+      {
+        id: 2,
+        email: 'crew@dcvfd.org',
+        name: 'Crew Member',
+        role: 'crew',
+        station_id: 10,
+        auth_method: 'pin',
+        is_active: 1,
+        created_at: '2026-01-01',
+        updated_at: '2026-01-01',
+        last_login_at: null,
+        station_name: 'Station 10',
+      },
     ];
   });
 }
 
 function seedSessions() {
   mockDb.onQuery('FROM inventory_sessions', () => [
-    { id: 1, station_id: 10, submitted_at: '2026-04-01T12:00:00Z', submitted_by: 'crew@dcvfd.org', item_count: 10, items_short: 2 },
+    {
+      id: 1,
+      station_id: 10,
+      submitted_at: '2026-04-01T12:00:00Z',
+      submitted_by: 'crew@dcvfd.org',
+      item_count: 10,
+      items_short: 2,
+    },
   ]);
 }
 
 function seedHistory() {
   mockDb.onQuery('FROM inventory_history', () => [
-    { id: 1, session_id: 1, item_name: 'NPA Kit', category: 'Airway', target_count: 4, actual_count: 2, delta: -2, status: 'short', station_name: 'Station 10' },
+    {
+      id: 1,
+      session_id: 1,
+      item_name: 'NPA Kit',
+      category: 'Airway',
+      target_count: 4,
+      actual_count: 2,
+      delta: -2,
+      status: 'short',
+      station_name: 'Station 10',
+    },
   ]);
 }
 
@@ -159,18 +225,33 @@ function seedDashboard() {
 
   // Latest sessions joined with stations
   mockDb.onQuery('FROM inventory_sessions s\n         JOIN stations st', () => [
-    { id: 1, station_id: 10, submitted_at: '2026-04-01T12:00:00Z', submitted_by: 'crew@dcvfd.org', item_count: 10, items_short: 2, station_name: 'Station 10', station_code: 'FS10' },
+    {
+      id: 1,
+      station_id: 10,
+      submitted_at: '2026-04-01T12:00:00Z',
+      submitted_by: 'crew@dcvfd.org',
+      item_count: 10,
+      items_short: 2,
+      station_name: 'Station 10',
+      station_code: 'FS10',
+    },
   ]);
 
   // Shortage items
   mockDb.onQuery('FROM inventory_history h\n           JOIN inventory_sessions s', () => [
-    { session_id: 1, item_name: 'NPA Kit', category: 'Airway', target_count: 4, actual_count: 2, delta: -2, station_id: 10 },
+    {
+      session_id: 1,
+      item_name: 'NPA Kit',
+      category: 'Airway',
+      target_count: 4,
+      actual_count: 2,
+      delta: -2,
+      station_id: 10,
+    },
   ]);
 
   // Category shortages
-  mockDb.onQuery('SELECT category, COUNT', () => [
-    { category: 'Airway', count: 1 },
-  ]);
+  mockDb.onQuery('SELECT category, COUNT', () => [{ category: 'Airway', count: 1 }]);
 
   // All active stations
   mockDb.onQuery('SELECT id, name, code FROM stations WHERE is_active', () => [
@@ -186,7 +267,14 @@ function seedDashboard() {
 
   // Recent sessions
   mockDb.onQuery('ORDER BY s.submitted_at DESC', () => [
-    { id: 1, submitted_at: '2026-04-01T12:00:00Z', submitted_by: 'crew@dcvfd.org', item_count: 10, items_short: 2, station_name: 'Station 10' },
+    {
+      id: 1,
+      submitted_at: '2026-04-01T12:00:00Z',
+      submitted_by: 'crew@dcvfd.org',
+      item_count: 10,
+      items_short: 2,
+      station_name: 'Station 10',
+    },
   ]);
 }
 
@@ -205,7 +293,7 @@ describe('API Contract Tests', () => {
     it('returns { status, app, timestamp }', async () => {
       const res = await callWorker('GET', '/api/health');
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('status', 'ok');
       expect(body).toHaveProperty('app', 'ems-inventory-test');
       expect(body).toHaveProperty('timestamp');
@@ -218,7 +306,7 @@ describe('API Contract Tests', () => {
       seedStations();
       const res = await callWorker('GET', '/api/stations');
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       // Must be wrapped in { stations: [...] }, NOT a flat array
       expect(body).not.toBeInstanceOf(Array);
       expect(body).toHaveProperty('stations');
@@ -235,7 +323,7 @@ describe('API Contract Tests', () => {
       seedItems();
       const res = await callWorker('GET', '/api/items');
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('items');
       expect(body).toHaveProperty('count');
       expect(Array.isArray(body.items)).toBe(true);
@@ -253,7 +341,7 @@ describe('API Contract Tests', () => {
       seedStockTargets();
       const res = await callWorker('GET', '/api/stock-targets?stationId=10');
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('stationId', 10);
       expect(body).toHaveProperty('targets');
       expect(body).toHaveProperty('count');
@@ -264,7 +352,7 @@ describe('API Contract Tests', () => {
     it('returns 400 when stationId is missing', async () => {
       const res = await callWorker('GET', '/api/stock-targets');
       expect(res.status).toBe(400);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('error');
     });
   });
@@ -274,7 +362,7 @@ describe('API Contract Tests', () => {
       seedInventoryTemplate();
       const res = await callWorker('GET', '/api/inventory/current/10');
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>[];
+      const body = (await res.json()) as Record<string, unknown>[];
       // Must be a flat array, not wrapped in an object
       expect(Array.isArray(body)).toBe(true);
       expect(body.length).toBeGreaterThan(0);
@@ -302,7 +390,7 @@ describe('API Contract Tests', () => {
       seedOrders();
       const res = await callWorkerAuth('GET', '/api/orders', undefined, 'logistics');
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('orders');
       expect(body).toHaveProperty('count');
       expect(Array.isArray(body.orders)).toBe(true);
@@ -325,7 +413,7 @@ describe('API Contract Tests', () => {
       seedUsers();
       const res = await callWorkerAuth('GET', '/api/users', undefined, 'admin');
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('users');
       expect(body).toHaveProperty('count');
       expect(Array.isArray(body.users)).toBe(true);
@@ -350,7 +438,7 @@ describe('API Contract Tests', () => {
       seedSessions();
       const res = await callWorkerAuth('GET', '/api/inventory/sessions', undefined, 'crew');
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('sessions');
       expect(body).toHaveProperty('count');
       expect(Array.isArray(body.sessions)).toBe(true);
@@ -368,7 +456,7 @@ describe('API Contract Tests', () => {
       seedHistory();
       const res = await callWorkerAuth('GET', '/api/inventory/history', undefined, 'crew');
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('history');
       expect(body).toHaveProperty('count');
       expect(Array.isArray(body.history)).toBe(true);
@@ -391,7 +479,7 @@ describe('API Contract Tests', () => {
       seedDashboard();
       const res = await callWorkerAuth('GET', '/api/dashboard/stats', undefined, 'logistics');
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('stations');
       expect(body).toHaveProperty('categoryShortages');
       expect(body).toHaveProperty('orderPipeline');
@@ -428,7 +516,7 @@ describe('API Contract Tests', () => {
 
       const res = await callWorkerAuth('GET', '/api/inventory/current/10/summary', undefined, 'crew');
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('stationId', 10);
       expect(body).toHaveProperty('stationName', 'Station 10');
       expect(body).toHaveProperty('lastSubmission');
@@ -459,15 +547,20 @@ describe('API Contract Tests', () => {
       mockDb.onQuery('INSERT INTO inventory_history', () => []);
       mockDb.onQuery('INSERT INTO orders', () => []);
 
-      const res = await callWorkerAuth('POST', '/api/inventory/submit', {
-        stationId: 10,
-        counts: [
-          { itemId: 1, actualCount: 2 },
-          { itemId: 2, actualCount: 1 },
-        ],
-      }, 'crew');
+      const res = await callWorkerAuth(
+        'POST',
+        '/api/inventory/submit',
+        {
+          stationId: 10,
+          counts: [
+            { itemId: 1, actualCount: 2 },
+            { itemId: 2, actualCount: 1 },
+          ],
+        },
+        'crew',
+      );
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('sessionId');
       expect(body).toHaveProperty('itemCount');
       expect(body).toHaveProperty('itemsShort');
@@ -491,12 +584,17 @@ describe('API Contract Tests', () => {
       mockDb.onQuery('SELECT * FROM items WHERE id', () => [existingItem]);
       mockDb.onQuery('UPDATE items SET', () => []);
 
-      const res = await callWorkerAuth('PUT', '/api/items/1', {
-        name: 'NPA Kit Updated',
-        category: 'Airway',
-      }, 'logistics');
+      const res = await callWorkerAuth(
+        'PUT',
+        '/api/items/1',
+        {
+          name: 'NPA Kit Updated',
+          category: 'Airway',
+        },
+        'logistics',
+      );
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('item');
       const item = body.item as Record<string, unknown>;
       expect(item).toHaveProperty('id');
@@ -511,13 +609,18 @@ describe('API Contract Tests', () => {
       mockDb.onQuery('INSERT INTO items', () => []);
       mockDb.onQuery('SELECT * FROM items WHERE id', () => [newItem]);
 
-      const res = await callWorkerAuth('POST', '/api/items', {
-        name: 'Cervical Collar',
-        category: 'Splinting',
-        sort_order: 10,
-      }, 'logistics');
+      const res = await callWorkerAuth(
+        'POST',
+        '/api/items',
+        {
+          name: 'Cervical Collar',
+          category: 'Splinting',
+          sort_order: 10,
+        },
+        'logistics',
+      );
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('item');
       const item = body.item as Record<string, unknown>;
       expect(item).toHaveProperty('id');
@@ -529,7 +632,9 @@ describe('API Contract Tests', () => {
   describe('PUT /api/stock-targets', () => {
     it('returns 401 without auth', async () => {
       const res = await callWorker('PUT', '/api/stock-targets', {
-        itemId: 1, stationId: 10, targetCount: 5,
+        itemId: 1,
+        stationId: 10,
+        targetCount: 5,
       });
       expect(res.status).toBe(401);
     });
@@ -537,13 +642,18 @@ describe('API Contract Tests', () => {
     it('returns { itemId, stationId, targetCount }', async () => {
       mockDb.onQuery('INSERT OR REPLACE INTO stock_targets', () => []);
 
-      const res = await callWorkerAuth('PUT', '/api/stock-targets', {
-        itemId: 1,
-        stationId: 10,
-        targetCount: 5,
-      }, 'logistics');
+      const res = await callWorkerAuth(
+        'PUT',
+        '/api/stock-targets',
+        {
+          itemId: 1,
+          stationId: 10,
+          targetCount: 5,
+        },
+        'logistics',
+      );
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('itemId', 1);
       expect(body).toHaveProperty('stationId', 10);
       expect(body).toHaveProperty('targetCount', 5);
@@ -553,7 +663,8 @@ describe('API Contract Tests', () => {
   describe('PUT /api/orders', () => {
     it('returns 401 without auth', async () => {
       const res = await callWorker('PUT', '/api/orders', {
-        orderId: 1, status: 'in_progress',
+        orderId: 1,
+        status: 'in_progress',
       });
       expect(res.status).toBe(401);
     });
@@ -563,12 +674,17 @@ describe('API Contract Tests', () => {
       mockDb.onQuery('SELECT id, status FROM orders WHERE id', () => [{ id: 1, status: 'pending' }]);
       mockDb.onQuery('UPDATE orders SET', () => []);
 
-      const res = await callWorkerAuth('PUT', '/api/orders', {
-        orderId: 1,
-        status: 'in_progress',
-      }, 'logistics');
+      const res = await callWorkerAuth(
+        'PUT',
+        '/api/orders',
+        {
+          orderId: 1,
+          status: 'in_progress',
+        },
+        'logistics',
+      );
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('orderId', 1);
       expect(body).toHaveProperty('status', 'in_progress');
     });
@@ -590,12 +706,24 @@ describe('API Contract Tests', () => {
       mockDb.onQuery('SELECT id FROM users WHERE id', () => [{ id: 2 }]);
       mockDb.onQuery('UPDATE users SET role', () => []);
       mockDb.onQuery('SELECT u.id, u.email, u.name, u.role', () => [
-        { id: 2, email: 'crew@dcvfd.org', name: 'Crew Member', role: 'logistics', station_id: 10, auth_method: 'pin', is_active: 1, created_at: '2026-01-01', updated_at: '2026-01-01', last_login_at: null, station_name: 'Station 10' },
+        {
+          id: 2,
+          email: 'crew@dcvfd.org',
+          name: 'Crew Member',
+          role: 'logistics',
+          station_id: 10,
+          auth_method: 'pin',
+          is_active: 1,
+          created_at: '2026-01-01',
+          updated_at: '2026-01-01',
+          last_login_at: null,
+          station_name: 'Station 10',
+        },
       ]);
 
       const res = await callWorkerAuth('PUT', '/api/users/2/role', { role: 'logistics' }, 'admin');
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('user');
       const user = body.user as Record<string, unknown>;
       expect(user).toHaveProperty('id');
@@ -617,12 +745,24 @@ describe('API Contract Tests', () => {
       mockDb.onQuery('SELECT id FROM users WHERE id', () => [{ id: 2 }]);
       mockDb.onQuery('UPDATE users SET is_active', () => []);
       mockDb.onQuery('SELECT u.id, u.email, u.name, u.role', () => [
-        { id: 2, email: 'crew@dcvfd.org', name: 'Crew Member', role: 'crew', station_id: 10, auth_method: 'pin', is_active: 0, created_at: '2026-01-01', updated_at: '2026-01-01', last_login_at: null, station_name: 'Station 10' },
+        {
+          id: 2,
+          email: 'crew@dcvfd.org',
+          name: 'Crew Member',
+          role: 'crew',
+          station_id: 10,
+          auth_method: 'pin',
+          is_active: 0,
+          created_at: '2026-01-01',
+          updated_at: '2026-01-01',
+          last_login_at: null,
+          station_name: 'Station 10',
+        },
       ]);
 
       const res = await callWorkerAuth('PUT', '/api/users/2/active', { is_active: false }, 'admin');
       expect(res.status).toBe(200);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('user');
       const user = body.user as Record<string, unknown>;
       expect(user).toHaveProperty('id');
@@ -638,7 +778,7 @@ describe('API Contract Tests', () => {
     it('404 returns { error: string }', async () => {
       const res = await callWorker('GET', '/api/nonexistent');
       expect(res.status).toBe(404);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('error');
       expect(typeof body.error).toBe('string');
     });
@@ -646,7 +786,7 @@ describe('API Contract Tests', () => {
     it('401 returns { error: string }', async () => {
       const res = await callWorker('GET', '/api/orders');
       expect(res.status).toBe(401);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('error');
       expect(typeof body.error).toBe('string');
     });
@@ -654,7 +794,7 @@ describe('API Contract Tests', () => {
     it('400 returns { error: string }', async () => {
       const res = await callWorker('GET', '/api/stock-targets');
       expect(res.status).toBe(400);
-      const body = await res.json() as Record<string, unknown>;
+      const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('error');
       expect(typeof body.error).toBe('string');
     });

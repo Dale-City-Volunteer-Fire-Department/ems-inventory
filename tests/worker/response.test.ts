@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { ok, created, badRequest, unauthorized, forbidden, notFound, tooManyRequests, serverError } from '../../src/worker/lib/response';
+import {
+  ok,
+  created,
+  badRequest,
+  unauthorized,
+  forbidden,
+  notFound,
+  tooManyRequests,
+  serverError,
+} from '../../src/worker/lib/response';
 
 // ── Tests ────────────────────────────────────────────────────────────
 
@@ -48,7 +57,7 @@ describe('Response Helpers', () => {
     it('returns 400 with error message', async () => {
       const res = badRequest('Missing required field');
       expect(res.status).toBe(400);
-      const body = await res.json() as { error: string };
+      const body = (await res.json()) as { error: string };
       expect(body.error).toBe('Missing required field');
     });
 
@@ -62,14 +71,14 @@ describe('Response Helpers', () => {
     it('returns 401 with default message', async () => {
       const res = unauthorized();
       expect(res.status).toBe(401);
-      const body = await res.json() as { error: string };
+      const body = (await res.json()) as { error: string };
       expect(body.error).toBe('Unauthorized');
     });
 
     it('returns 401 with custom message', async () => {
       const res = unauthorized('Authentication required');
       expect(res.status).toBe(401);
-      const body = await res.json() as { error: string };
+      const body = (await res.json()) as { error: string };
       expect(body.error).toBe('Authentication required');
     });
   });
@@ -78,14 +87,14 @@ describe('Response Helpers', () => {
     it('returns 403 with default message', async () => {
       const res = forbidden();
       expect(res.status).toBe(403);
-      const body = await res.json() as { error: string };
+      const body = (await res.json()) as { error: string };
       expect(body.error).toBe('Forbidden');
     });
 
     it('returns 403 with custom message', async () => {
       const res = forbidden('Requires admin role or higher');
       expect(res.status).toBe(403);
-      const body = await res.json() as { error: string };
+      const body = (await res.json()) as { error: string };
       expect(body.error).toBe('Requires admin role or higher');
     });
   });
@@ -94,14 +103,14 @@ describe('Response Helpers', () => {
     it('returns 404 with default message', async () => {
       const res = notFound();
       expect(res.status).toBe(404);
-      const body = await res.json() as { error: string };
+      const body = (await res.json()) as { error: string };
       expect(body.error).toBe('Not found');
     });
 
     it('returns 404 with custom message', async () => {
       const res = notFound('Item 42 not found');
       expect(res.status).toBe(404);
-      const body = await res.json() as { error: string };
+      const body = (await res.json()) as { error: string };
       expect(body.error).toBe('Item 42 not found');
     });
   });
@@ -110,14 +119,14 @@ describe('Response Helpers', () => {
     it('returns 429 with default message', async () => {
       const res = tooManyRequests();
       expect(res.status).toBe(429);
-      const body = await res.json() as { error: string };
+      const body = (await res.json()) as { error: string };
       expect(body.error).toBe('Too many requests');
     });
 
     it('returns 429 with custom message', async () => {
       const res = tooManyRequests('Rate limit exceeded');
       expect(res.status).toBe(429);
-      const body = await res.json() as { error: string };
+      const body = (await res.json()) as { error: string };
       expect(body.error).toBe('Rate limit exceeded');
     });
   });
@@ -126,14 +135,14 @@ describe('Response Helpers', () => {
     it('returns 500 with default message', async () => {
       const res = serverError();
       expect(res.status).toBe(500);
-      const body = await res.json() as { error: string };
+      const body = (await res.json()) as { error: string };
       expect(body.error).toBe('Internal server error');
     });
 
     it('returns 500 with custom message', async () => {
       const res = serverError('Database connection failed');
       expect(res.status).toBe(500);
-      const body = await res.json() as { error: string };
+      const body = (await res.json()) as { error: string };
       expect(body.error).toBe('Database connection failed');
     });
   });

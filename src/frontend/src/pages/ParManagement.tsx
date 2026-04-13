@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { Item, StockTarget, Category } from '@shared/types';
-import type { ItemsResponse, StockTargetsResponse, ItemResponse, StockTargetUpdateResponse } from '@shared/api-responses';
+import type {
+  ItemsResponse,
+  StockTargetsResponse,
+  ItemResponse,
+  StockTargetUpdateResponse,
+} from '@shared/api-responses';
 import { CATEGORIES } from '@shared/categories';
 import { apiFetch } from '../hooks/useApi';
 import { STATION_NICKNAMES } from '../hooks/useStations';
@@ -9,10 +14,7 @@ const STATION_IDS = [10, 13, 18, 20] as const;
 
 // Debounce helper
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function useDebouncedCallback<T extends (...args: any[]) => void>(
-  callback: T,
-  delay: number,
-): T {
+function useDebouncedCallback<T extends (...args: any[]) => void>(callback: T, delay: number): T {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const callbackRef = useRef(callback);
   callbackRef.current = callback;
@@ -80,11 +82,7 @@ export default function ParManagement() {
   const loadAllTargets = useCallback(async () => {
     try {
       const results = await Promise.all(
-        STATION_IDS.map((sid) =>
-          apiFetch<StockTargetsResponse>(
-            `/stock-targets?stationId=${sid}`,
-          ),
-        ),
+        STATION_IDS.map((sid) => apiFetch<StockTargetsResponse>(`/stock-targets?stationId=${sid}`)),
       );
       const map = new Map<string, StockTarget>();
       for (const result of results) {
@@ -122,11 +120,7 @@ export default function ParManagement() {
   const filteredItems = useMemo(() => {
     if (!search.trim()) return items;
     const q = search.toLowerCase();
-    return items.filter(
-      (item) =>
-        item.name.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q),
-    );
+    return items.filter((item) => item.name.toLowerCase().includes(q) || item.category.toLowerCase().includes(q));
   }, [items, search]);
 
   const groupedByCategory = useMemo(() => {
@@ -142,51 +136,45 @@ export default function ParManagement() {
 
   // ── Auto-save PAR count ───────────────────────────────────────────
 
-  const saveTarget = useCallback(
-    async (itemId: number, stationId: number, targetCount: number) => {
-      const key = targetKey(itemId, stationId);
-      setSavingCells((prev) => new Set(prev).add(key));
-      try {
-        await apiFetch<StockTargetUpdateResponse>(
-          '/stock-targets',
-          { method: 'PUT', body: { itemId, stationId, targetCount } },
-        );
-        // Update local state
-        setAllTargets((prev) => {
-          const next = new Map(prev);
-          const existing = next.get(key);
-          if (existing) {
-            next.set(key, { ...existing, target_count: targetCount });
-          } else {
-            next.set(key, {
-              id: 0,
-              item_id: itemId,
-              station_id: stationId,
-              target_count: targetCount,
-              updated_at: new Date().toISOString(),
-            });
-          }
-          return next;
-        });
-      } catch (err) {
-        setErrorMsg(err instanceof Error ? err.message : 'Failed to save target');
-      } finally {
-        setSavingCells((prev) => {
-          const next = new Set(prev);
-          next.delete(key);
-          return next;
-        });
-      }
-    },
-    [],
-  );
+  const saveTarget = useCallback(async (itemId: number, stationId: number, targetCount: number) => {
+    const key = targetKey(itemId, stationId);
+    setSavingCells((prev) => new Set(prev).add(key));
+    try {
+      await apiFetch<StockTargetUpdateResponse>('/stock-targets', {
+        method: 'PUT',
+        body: { itemId, stationId, targetCount },
+      });
+      // Update local state
+      setAllTargets((prev) => {
+        const next = new Map(prev);
+        const existing = next.get(key);
+        if (existing) {
+          next.set(key, { ...existing, target_count: targetCount });
+        } else {
+          next.set(key, {
+            id: 0,
+            item_id: itemId,
+            station_id: stationId,
+            target_count: targetCount,
+            updated_at: new Date().toISOString(),
+          });
+        }
+        return next;
+      });
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to save target');
+    } finally {
+      setSavingCells((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  }, []);
 
-  const debouncedSave = useDebouncedCallback(
-    (itemId: number, stationId: number, targetCount: number) => {
-      saveTarget(itemId, stationId, targetCount);
-    },
-    600,
-  );
+  const debouncedSave = useDebouncedCallback((itemId: number, stationId: number, targetCount: number) => {
+    saveTarget(itemId, stationId, targetCount);
+  }, 600);
 
   // ── Handlers ──────────────────────────────────────────────────────
 
@@ -222,9 +210,7 @@ export default function ParManagement() {
         method: 'PUT',
         body: { is_active: !item.is_active },
       });
-      setItems((prev) =>
-        prev.map((i) => (i.id === item.id ? { ...i, is_active: !i.is_active } : i)),
-      );
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, is_active: !i.is_active } : i)));
       setConfirmDeleteId(null);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Failed to update item');
@@ -238,9 +224,7 @@ export default function ParManagement() {
         method: 'PUT',
         body: { category: newCat },
       });
-      setItems((prev) =>
-        prev.map((i) => (i.id === item.id ? { ...i, category: newCat } : i)),
-      );
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, category: newCat } : i)));
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Failed to change category');
     }
@@ -286,9 +270,7 @@ export default function ParManagement() {
         method: 'PUT',
         body: { name: editingName.trim() },
       });
-      setItems((prev) =>
-        prev.map((i) => (i.id === editingItemId ? { ...i, name: editingName.trim() } : i)),
-      );
+      setItems((prev) => prev.map((i) => (i.id === editingItemId ? { ...i, name: editingName.trim() } : i)));
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Failed to rename item');
     } finally {
@@ -345,15 +327,9 @@ export default function ParManagement() {
         ),
       );
       // Update local items state
-      setItems((prev) =>
-        prev.map((i) =>
-          i.category === oldName ? { ...i, category: newName as Category } : i,
-        ),
-      );
+      setItems((prev) => prev.map((i) => (i.category === oldName ? { ...i, category: newName as Category } : i)));
       // Update custom categories list
-      setCustomCategories((prev) =>
-        prev.map((c) => (c === oldName ? newName : c)),
-      );
+      setCustomCategories((prev) => prev.map((c) => (c === oldName ? newName : c)));
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Failed to rename category');
     } finally {
@@ -378,9 +354,7 @@ export default function ParManagement() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100">PAR Management</h1>
-          <p className="text-sm text-zinc-400 mt-0.5">
-            Set target stock levels per item per station
-          </p>
+          <p className="text-sm text-zinc-400 mt-0.5">Set target stock levels per item per station</p>
         </div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
@@ -500,7 +474,12 @@ export default function ParManagement() {
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-border-subtle text-zinc-300 hover:text-zinc-100 hover:bg-surface-raised transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"
+            />
           </svg>
           Manage Categories
           <svg
@@ -518,7 +497,9 @@ export default function ParManagement() {
       {showCategoryPanel && (
         <div className="p-4 rounded-lg bg-surface-raised border border-border-subtle space-y-3">
           <h3 className="text-sm font-medium text-zinc-200">Categories</h3>
-          <p className="text-xs text-zinc-500">Click a category name to rename it. Renaming updates all items in that category.</p>
+          <p className="text-xs text-zinc-500">
+            Click a category name to rename it. Renaming updates all items in that category.
+          </p>
 
           {/* Category pills */}
           <div className="flex flex-wrap gap-2">
@@ -542,9 +523,7 @@ export default function ParManagement() {
                         disabled={categoryBusy}
                         className="px-2 py-1 rounded-lg text-xs bg-surface border border-dcvfd-accent text-zinc-100 focus:outline-none w-28"
                       />
-                      {categoryBusy && (
-                        <span className="text-[10px] text-amber-400">Saving...</span>
-                      )}
+                      {categoryBusy && <span className="text-[10px] text-amber-400">Saving...</span>}
                     </div>
                   ) : (
                     <button
@@ -592,10 +571,7 @@ export default function ParManagement() {
         {Object.entries(groupedByCategory).map(([cat, catItems]) => {
           const isCollapsed = collapsedCategories.has(cat);
           return (
-            <div
-              key={cat}
-              className="rounded-lg border border-border-subtle bg-surface overflow-hidden"
-            >
+            <div key={cat} className="rounded-lg border border-border-subtle bg-surface overflow-hidden">
               {/* Category header — always visible, spans full width */}
               <button
                 onClick={() => toggleCategory(cat)}
@@ -619,9 +595,7 @@ export default function ParManagement() {
               {!isCollapsed && (
                 <div>
                   <div className="grid grid-cols-[1fr_repeat(4,56px)] items-center border-b border-border-subtle px-2 py-1">
-                    <div className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider pl-1">
-                      Item
-                    </div>
+                    <div className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider pl-1">Item</div>
                     {STATION_IDS.map((sid) => (
                       <div
                         key={sid}
@@ -737,9 +711,7 @@ function ItemRow({
           <button
             onClick={() => onRenameStart(item)}
             className={`flex-1 min-w-0 text-left text-xs truncate ${
-              item.is_active
-                ? 'text-zinc-200 hover:text-dcvfd-accent'
-                : 'text-zinc-500 line-through'
+              item.is_active ? 'text-zinc-200 hover:text-dcvfd-accent' : 'text-zinc-500 line-through'
             } transition-colors`}
             title="Click to rename"
           >
@@ -772,7 +744,12 @@ function ItemRow({
             title="Change category"
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"
+              />
             </svg>
           </button>
         )}
@@ -811,7 +788,12 @@ function ItemRow({
             title="Reactivate item"
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
             </svg>
           </button>
         )}
@@ -825,10 +807,7 @@ function ItemRow({
         const isSaving = savingCells.has(key);
 
         return (
-          <div
-            key={sid}
-            className={`flex items-center justify-center px-0.5 ${isSaving ? 'bg-amber-500/5' : ''}`}
-          >
+          <div key={sid} className={`flex items-center justify-center px-0.5 ${isSaving ? 'bg-amber-500/5' : ''}`}>
             <input
               type="text"
               inputMode="numeric"

@@ -19,28 +19,28 @@ The core UX requirement is single-tap numeric inputs on mobile devices. Every UI
 > Screenshots are captured from the production deployment at emsinventory.dcvfd.org.
 > To add screenshots, place images in `docs/` and reference them as `![Page Name](docs/screenshot-name.png)`.
 
-| Page | Description |
-|------|-------------|
-| Login | Glass-morphism card with DCVFD badge, Entra SSO and Magic Link buttons |
-| Inventory Form | Mobile-optimized category groups with single-tap numeric inputs |
-| Dashboard | Station health cards with freshness indicators, category shortage bars, order pipeline |
-| PAR Management | Two-column category grid with inline PAR editing across 4 stations |
-| Inventories | Expandable session history with per-item detail view |
-| Orders | Pick list cards with status workflow (pending, in progress, filled) |
+| Page           | Description                                                                            |
+| -------------- | -------------------------------------------------------------------------------------- |
+| Login          | Glass-morphism card with DCVFD badge, Entra SSO and Magic Link buttons                 |
+| Inventory Form | Mobile-optimized category groups with single-tap numeric inputs                        |
+| Dashboard      | Station health cards with freshness indicators, category shortage bars, order pipeline |
+| PAR Management | Two-column category grid with inline PAR editing across 4 stations                     |
+| Inventories    | Expandable session history with per-item detail view                                   |
+| Orders         | Pick list cards with status workflow (pending, in progress, filled)                    |
 
 ---
 
 ## Tech Stack
 
-| Layer     | Technology                                |
-| --------- | ----------------------------------------- |
-| Runtime   | Cloudflare Workers                        |
-| Database  | Cloudflare D1 (SQLite at the edge)        |
-| Sessions  | Cloudflare KV                             |
-| Frontend  | React 19 + Vite 6 + Tailwind CSS v4      |
-| Language  | TypeScript (strict mode throughout)       |
+| Layer     | Technology                                   |
+| --------- | -------------------------------------------- |
+| Runtime   | Cloudflare Workers                           |
+| Database  | Cloudflare D1 (SQLite at the edge)           |
+| Sessions  | Cloudflare KV                                |
+| Frontend  | React 19 + Vite 6 + Tailwind CSS v4          |
+| Language  | TypeScript (strict mode throughout)          |
 | Auth      | Microsoft Entra ID SSO + Magic Link (Resend) |
-| Data sync | D1 to Azure SQL (for PowerBI reporting)   |
+| Data sync | D1 to Azure SQL (for PowerBI reporting)      |
 
 ---
 
@@ -166,65 +166,65 @@ The Worker serves both the JSON API (`/api/*` routes) and the built SPA (static 
 
 ### Public (no authentication required)
 
-| Method | Path                                | Description                         |
-| ------ | ----------------------------------- | ----------------------------------- |
-| GET    | `/api/health`                       | Health check                        |
-| GET    | `/api/stations`                     | List all active stations            |
-| GET    | `/api/items`                        | List all active items               |
-| GET    | `/api/stock-targets`                | List all PAR levels                 |
-| GET    | `/api/inventory/current/:stationId` | Get inventory template for a station|
+| Method | Path                                | Description                          |
+| ------ | ----------------------------------- | ------------------------------------ |
+| GET    | `/api/health`                       | Health check                         |
+| GET    | `/api/stations`                     | List all active stations             |
+| GET    | `/api/items`                        | List all active items                |
+| GET    | `/api/stock-targets`                | List all PAR levels                  |
+| GET    | `/api/inventory/current/:stationId` | Get inventory template for a station |
 
 ### Auth Routes (unauthenticated)
 
-| Method | Path                             | Description                     |
-| ------ | -------------------------------- | ------------------------------- |
-| GET    | `/api/auth/entra/login`          | Initiate Entra ID SSO flow      |
-| GET    | `/api/auth/entra/callback`       | Entra ID OAuth2 callback        |
-| POST   | `/api/auth/magic-link/request`   | Request a magic link email      |
-| GET    | `/api/auth/magic-link/verify`    | Verify magic link token         |
-| POST   | `/api/auth/pin`                  | Authenticate with station PIN   |
-| GET    | `/api/auth/me`                   | Get current session info        |
-| POST   | `/api/auth/logout`               | Destroy current session         |
+| Method | Path                           | Description                   |
+| ------ | ------------------------------ | ----------------------------- |
+| GET    | `/api/auth/entra/login`        | Initiate Entra ID SSO flow    |
+| GET    | `/api/auth/entra/callback`     | Entra ID OAuth2 callback      |
+| POST   | `/api/auth/magic-link/request` | Request a magic link email    |
+| GET    | `/api/auth/magic-link/verify`  | Verify magic link token       |
+| POST   | `/api/auth/pin`                | Authenticate with station PIN |
+| GET    | `/api/auth/me`                 | Get current session info      |
+| POST   | `/api/auth/logout`             | Destroy current session       |
 
 ### Authenticated (any role)
 
-| Method | Path                                        | Description                        |
-| ------ | ------------------------------------------- | ---------------------------------- |
-| POST   | `/api/inventory/submit`                     | Submit inventory counts            |
-| GET    | `/api/inventory/history`                    | Query inventory history            |
-| GET    | `/api/inventory/sessions`                   | List completed inventory sessions  |
-| GET    | `/api/inventory/current/:stationId/summary` | Dashboard summary for a station    |
+| Method | Path                                        | Description                       |
+| ------ | ------------------------------------------- | --------------------------------- |
+| POST   | `/api/inventory/submit`                     | Submit inventory counts           |
+| GET    | `/api/inventory/history`                    | Query inventory history           |
+| GET    | `/api/inventory/sessions`                   | List completed inventory sessions |
+| GET    | `/api/inventory/current/:stationId/summary` | Dashboard summary for a station   |
 
 ### Authenticated (logistics or admin)
 
-| Method | Path                     | Description                    |
-| ------ | ------------------------ | ------------------------------ |
-| PUT    | `/api/items`             | Create or update an item       |
-| POST   | `/api/items`             | Create or update an item       |
-| PUT    | `/api/items/:id`         | Update a single item by ID     |
-| PUT    | `/api/stock-targets`     | Update PAR levels              |
-| PUT    | `/api/stock-targets/:id` | Update a single PAR level      |
-| GET    | `/api/orders`            | List resupply orders           |
-| PUT    | `/api/orders`            | Update order status            |
-| GET    | `/api/dashboard/stats`   | Comprehensive dashboard stats  |
+| Method | Path                     | Description                   |
+| ------ | ------------------------ | ----------------------------- |
+| PUT    | `/api/items`             | Create or update an item      |
+| POST   | `/api/items`             | Create or update an item      |
+| PUT    | `/api/items/:id`         | Update a single item by ID    |
+| PUT    | `/api/stock-targets`     | Update PAR levels             |
+| PUT    | `/api/stock-targets/:id` | Update a single PAR level     |
+| GET    | `/api/orders`            | List resupply orders          |
+| PUT    | `/api/orders`            | Update order status           |
+| GET    | `/api/dashboard/stats`   | Comprehensive dashboard stats |
 
 ### Authenticated (admin only)
 
-| Method | Path                    | Description                    |
-| ------ | ----------------------- | ------------------------------ |
-| GET    | `/api/users`            | List all users                 |
-| PUT    | `/api/users/:id/role`   | Update a user's role           |
-| PUT    | `/api/users/:id/active` | Activate or deactivate a user  |
+| Method | Path                    | Description                   |
+| ------ | ----------------------- | ----------------------------- |
+| GET    | `/api/users`            | List all users                |
+| PUT    | `/api/users/:id/role`   | Update a user's role          |
+| PUT    | `/api/users/:id/active` | Activate or deactivate a user |
 
 ---
 
 ## Roles
 
-| Role       | Page Access                                                                    |
-| ---------- | ------------------------------------------------------------------------------ |
-| `crew`     | New Inventory only (station select, inventory form, submit)                    |
-| `logistics`| Everything in crew + Dashboard, Inventories, Orders, PAR Management            |
-| `admin`    | Everything in logistics + Users management (role assignment, account control)   |
+| Role        | Page Access                                                                   |
+| ----------- | ----------------------------------------------------------------------------- |
+| `crew`      | New Inventory only (station select, inventory form, submit)                   |
+| `logistics` | Everything in crew + Dashboard, Inventories, Orders, PAR Management           |
+| `admin`     | Everything in logistics + Users management (role assignment, account control) |
 
 Role enforcement is applied at two layers: the Worker middleware (`requireRole`) gates API endpoints, and the React router conditionally renders navigation and routes based on the user's role.
 
@@ -232,12 +232,12 @@ Role enforcement is applied at two layers: the Worker middleware (`requireRole`)
 
 ## Stations
 
-| ID | Code | Name       | Nickname        | Notes             |
-| -- | ---- | ---------- | --------------- | ----------------- |
-| 10 | FS10 | Station 10 | The Dime        |                   |
-| 13 | FS13 | Station 13 | Midtown         | Central warehouse |
-| 18 | FS18 | Station 18 | --              |                   |
-| 20 | FS20 | Station 20 | Parkway Express |                   |
+| ID  | Code | Name       | Nickname        | Notes             |
+| --- | ---- | ---------- | --------------- | ----------------- |
+| 10  | FS10 | Station 10 | The Dime        |                   |
+| 13  | FS13 | Station 13 | Midtown         | Central warehouse |
+| 18  | FS18 | Station 18 | --              |                   |
+| 20  | FS20 | Station 20 | Parkway Express |                   |
 
 Station 13 serves as the central supply warehouse where resupply orders are fulfilled.
 
@@ -311,14 +311,14 @@ npm run test:watch     # Run tests in watch mode
 
 Set via `wrangler secret put <NAME>` or the Cloudflare Dashboard. Never commit these to the repository.
 
-| Secret                    | Purpose                                  |
-| ------------------------- | ---------------------------------------- |
-| `AZURE_AD_CLIENT_ID`     | Entra ID application (client) ID         |
-| `AZURE_AD_TENANT_ID`     | Entra ID directory (tenant) ID           |
-| `AZURE_AD_CLIENT_SECRET` | Entra ID client secret                   |
-| `STATION_PIN`            | Shared station PIN for quick crew auth   |
-| `MAGIC_LINK_SECRET`      | HMAC signing key for magic link tokens   |
-| `RESEND_API_KEY`         | Resend API key for magic link emails     |
+| Secret                   | Purpose                                |
+| ------------------------ | -------------------------------------- |
+| `AZURE_AD_CLIENT_ID`     | Entra ID application (client) ID       |
+| `AZURE_AD_TENANT_ID`     | Entra ID directory (tenant) ID         |
+| `AZURE_AD_CLIENT_SECRET` | Entra ID client secret                 |
+| `STATION_PIN`            | Shared station PIN for quick crew auth |
+| `MAGIC_LINK_SECRET`      | HMAC signing key for magic link tokens |
+| `RESEND_API_KEY`         | Resend API key for magic link emails   |
 
 ### Environment Variables
 
@@ -331,11 +331,11 @@ Set in `wrangler.toml` (non-secret, checked into source):
 
 ### Bindings
 
-| Binding    | Type   | Purpose                  |
-| ---------- | ------ | ------------------------ |
-| `DB`       | D1     | Primary database         |
-| `SESSIONS` | KV     | Session token storage    |
-| `ASSETS`   | Assets | Built SPA static files   |
+| Binding    | Type   | Purpose                |
+| ---------- | ------ | ---------------------- |
+| `DB`       | D1     | Primary database       |
+| `SESSIONS` | KV     | Session token storage  |
+| `ASSETS`   | Assets | Built SPA static files |
 
 ---
 
@@ -391,13 +391,13 @@ Current migrations:
 
 The `scripts/` directory contains migration tooling for importing historical data from the legacy systems:
 
-| Script                        | Purpose                                        |
-| ----------------------------- | ---------------------------------------------- |
-| `migrate-airtable-items.ts`   | Import item catalog from Airtable              |
-| `migrate-airtable-targets.ts` | Import PAR levels from Airtable                |
-| `migrate-airtable-history.ts` | Import historical inventory records            |
-| `migrate-podio-history.ts`    | Import historical records from Podio           |
-| `migrate-all.sh`              | Run all migrations in sequence                 |
+| Script                        | Purpose                              |
+| ----------------------------- | ------------------------------------ |
+| `migrate-airtable-items.ts`   | Import item catalog from Airtable    |
+| `migrate-airtable-targets.ts` | Import PAR levels from Airtable      |
+| `migrate-airtable-history.ts` | Import historical inventory records  |
+| `migrate-podio-history.ts`    | Import historical records from Podio |
+| `migrate-all.sh`              | Run all migrations in sequence       |
 
 Run the full migration:
 
@@ -412,12 +412,12 @@ bash migrate-all.sh
 
 The `sync/` directory contains tooling for replicating D1 data to Azure SQL, enabling PowerBI reporting for county stakeholders.
 
-| File               | Purpose                                |
-| ------------------ | -------------------------------------- |
-| `sync-to-azure.ts` | D1 to Azure SQL replication script     |
-| `schema.sql`       | Azure SQL target schema                |
-| `setup.sh`         | Initial Azure SQL setup                |
-| `run-sync.sh`      | Execute a sync run                     |
+| File               | Purpose                            |
+| ------------------ | ---------------------------------- |
+| `sync-to-azure.ts` | D1 to Azure SQL replication script |
+| `schema.sql`       | Azure SQL target schema            |
+| `setup.sh`         | Initial Azure SQL setup            |
+| `run-sync.sh`      | Execute a sync run                 |
 
 ---
 

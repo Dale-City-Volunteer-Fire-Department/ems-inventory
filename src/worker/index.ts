@@ -35,10 +35,7 @@ const ALLOWED_ORIGINS = [
 ];
 
 // Auth callback routes that are GET-based redirects and don't need CSRF
-const CSRF_EXEMPT_PATHS = [
-  '/api/auth/entra/callback',
-  '/api/auth/magic-link/verify',
-];
+const CSRF_EXEMPT_PATHS = ['/api/auth/entra/callback', '/api/auth/magic-link/verify'];
 
 export function verifyCsrfOrigin(request: Request): Response | null {
   const method = request.method;
@@ -293,8 +290,9 @@ async function handleUpdateItemById(request: Request, env: Env, path: string): P
       return badRequest(`Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}`);
     }
 
-    await env.DB
-      .prepare(`UPDATE items SET name = ?, category = ?, sort_order = ?, is_active = ?, updated_at = datetime('now') WHERE id = ?`)
+    await env.DB.prepare(
+      `UPDATE items SET name = ?, category = ?, sort_order = ?, is_active = ?, updated_at = datetime('now') WHERE id = ?`,
+    )
       .bind(name, category, sort_order, is_active, id)
       .run();
 
@@ -321,8 +319,7 @@ async function handleUpdateTargetById(request: Request, env: Env, path: string):
     const current = await env.DB.prepare('SELECT * FROM stock_targets WHERE id = ?').bind(id).first();
     if (!current) return notFound(`Stock target ${id} not found`);
 
-    await env.DB
-      .prepare(`UPDATE stock_targets SET target_count = ?, updated_at = datetime('now') WHERE id = ?`)
+    await env.DB.prepare(`UPDATE stock_targets SET target_count = ?, updated_at = datetime('now') WHERE id = ?`)
       .bind(body.target_count, id)
       .run();
 
@@ -344,20 +341,24 @@ async function handleGetInventorySummary(_request: Request, env: Env, path: stri
     const stationId = Number(parts[4]);
     if (!stationId || isNaN(stationId)) return badRequest('Invalid station ID');
 
-    const station = await env.DB.prepare('SELECT id, name FROM stations WHERE id = ?').bind(stationId).first<{ id: number; name: string }>();
+    const station = await env.DB.prepare('SELECT id, name FROM stations WHERE id = ?')
+      .bind(stationId)
+      .first<{ id: number; name: string }>();
     if (!station) return notFound(`Station ${stationId} not found`);
 
     // Get the most recent session for this station
-    const lastSession = await env.DB
-      .prepare('SELECT id, submitted_at, items_short FROM inventory_sessions WHERE station_id = ? ORDER BY submitted_at DESC LIMIT 1')
+    const lastSession = await env.DB.prepare(
+      'SELECT id, submitted_at, items_short FROM inventory_sessions WHERE station_id = ? ORDER BY submitted_at DESC LIMIT 1',
+    )
       .bind(stationId)
       .first<{ id: number; submitted_at: string; items_short: number }>();
 
     // Get shortages from the most recent session
     let shortages: { itemName: string; category: string; target: number; actual: number; delta: number }[] = [];
     if (lastSession) {
-      const rows = await env.DB
-        .prepare('SELECT item_name, category, target_count, actual_count, delta FROM inventory_history WHERE session_id = ? AND status = ? ORDER BY delta ASC')
+      const rows = await env.DB.prepare(
+        'SELECT item_name, category, target_count, actual_count, delta FROM inventory_history WHERE session_id = ? AND status = ? ORDER BY delta ASC',
+      )
         .bind(lastSession.id, 'short')
         .all<{ item_name: string; category: string; target_count: number; actual_count: number; delta: number }>();
 
@@ -451,7 +452,8 @@ async function handleGetUsers(request: Request, env: Env): Promise<Response> {
     const roleFilter = url.searchParams.get('role');
     const activeFilter = url.searchParams.get('active');
 
-    let sql = 'SELECT u.id, u.email, u.name, u.role, u.station_id, u.auth_method, u.is_active, u.created_at, u.updated_at, u.last_login_at, s.name AS station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id';
+    let sql =
+      'SELECT u.id, u.email, u.name, u.role, u.station_id, u.auth_method, u.is_active, u.created_at, u.updated_at, u.last_login_at, s.name AS station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id';
     const conditions: string[] = [];
     const bindings: unknown[] = [];
 
@@ -533,13 +535,13 @@ async function handleUpdateUserRole(request: Request, env: Env, path: string, se
     const user = await env.DB.prepare('SELECT id FROM users WHERE id = ?').bind(userId).first();
     if (!user) return notFound(`User ${userId} not found`);
 
-    await env.DB
-      .prepare(`UPDATE users SET role = ?, updated_at = datetime('now') WHERE id = ?`)
+    await env.DB.prepare(`UPDATE users SET role = ?, updated_at = datetime('now') WHERE id = ?`)
       .bind(body.role, userId)
       .run();
 
-    const updated = await env.DB
-      .prepare('SELECT u.id, u.email, u.name, u.role, u.station_id, u.auth_method, u.is_active, u.created_at, u.updated_at, u.last_login_at, s.name AS station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE u.id = ?')
+    const updated = await env.DB.prepare(
+      'SELECT u.id, u.email, u.name, u.role, u.station_id, u.auth_method, u.is_active, u.created_at, u.updated_at, u.last_login_at, s.name AS station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE u.id = ?',
+    )
       .bind(userId)
       .first<{
         id: number;
@@ -590,8 +592,7 @@ async function handleUpdateUserActive(request: Request, env: Env, path: string, 
     const user = await env.DB.prepare('SELECT id FROM users WHERE id = ?').bind(userId).first();
     if (!user) return notFound(`User ${userId} not found`);
 
-    await env.DB
-      .prepare(`UPDATE users SET is_active = ?, updated_at = datetime('now') WHERE id = ?`)
+    await env.DB.prepare(`UPDATE users SET is_active = ?, updated_at = datetime('now') WHERE id = ?`)
       .bind(body.is_active ? 1 : 0, userId)
       .run();
 
@@ -599,8 +600,9 @@ async function handleUpdateUserActive(request: Request, env: Env, path: string, 
     // will catch this on the user's next request and destroy their session.
     // No need to manually iterate KV session keys.
 
-    const updated = await env.DB
-      .prepare('SELECT u.id, u.email, u.name, u.role, u.station_id, u.auth_method, u.is_active, u.created_at, u.updated_at, u.last_login_at, s.name AS station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE u.id = ?')
+    const updated = await env.DB.prepare(
+      'SELECT u.id, u.email, u.name, u.role, u.station_id, u.auth_method, u.is_active, u.created_at, u.updated_at, u.last_login_at, s.name AS station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE u.id = ?',
+    )
       .bind(userId)
       .first<{
         id: number;
@@ -635,9 +637,8 @@ async function handleUpdateUserActive(request: Request, env: Env, path: string, 
 async function handleGetDashboardStats(env: Env): Promise<Response> {
   try {
     // 1. Latest session per station
-    const latestSessions = await env.DB
-      .prepare(
-        `SELECT s.id, s.station_id, s.submitted_at, s.submitted_by, s.item_count, s.items_short,
+    const latestSessions = await env.DB.prepare(
+      `SELECT s.id, s.station_id, s.submitted_at, s.submitted_by, s.item_count, s.items_short,
                 st.name AS station_name, st.code AS station_code
          FROM inventory_sessions s
          JOIN stations st ON st.id = s.station_id
@@ -645,37 +646,38 @@ async function handleGetDashboardStats(env: Env): Promise<Response> {
            SELECT MAX(id) FROM inventory_sessions GROUP BY station_id
          )
          ORDER BY st.id`,
-      )
-      .all<{
-        id: number;
-        station_id: number;
-        submitted_at: string;
-        submitted_by: string | null;
-        item_count: number;
-        items_short: number;
-        station_name: string;
-        station_code: string;
-      }>();
+    ).all<{
+      id: number;
+      station_id: number;
+      submitted_at: string;
+      submitted_by: string | null;
+      item_count: number;
+      items_short: number;
+      station_name: string;
+      station_code: string;
+    }>();
 
     const sessionIds = latestSessions.results.map((s) => s.id);
     const sessionMap = new Map(latestSessions.results.map((s) => [s.station_id, s]));
 
     // 2. Shortages from latest sessions
-    const shortagesByStation = new Map<number, { itemName: string; category: string; target: number; actual: number; delta: number }[]>();
+    const shortagesByStation = new Map<
+      number,
+      { itemName: string; category: string; target: number; actual: number; delta: number }[]
+    >();
     let categoryShortages: { category: string; count: number }[] = [];
 
     if (sessionIds.length > 0) {
       const placeholders = sessionIds.map(() => '?').join(',');
 
       // Get individual shortage items
-      const shortageRows = await env.DB
-        .prepare(
-          `SELECT h.session_id, h.item_name, h.category, h.target_count, h.actual_count, h.delta, s.station_id
+      const shortageRows = await env.DB.prepare(
+        `SELECT h.session_id, h.item_name, h.category, h.target_count, h.actual_count, h.delta, s.station_id
            FROM inventory_history h
            JOIN inventory_sessions s ON s.id = h.session_id
            WHERE h.session_id IN (${placeholders}) AND h.status = 'short'
            ORDER BY h.delta ASC`,
-        )
+      )
         .bind(...sessionIds)
         .all<{
           session_id: number;
@@ -700,14 +702,13 @@ async function handleGetDashboardStats(env: Env): Promise<Response> {
       }
 
       // 3. Category shortage counts
-      const catRows = await env.DB
-        .prepare(
-          `SELECT category, COUNT(*) as count
+      const catRows = await env.DB.prepare(
+        `SELECT category, COUNT(*) as count
            FROM inventory_history
            WHERE session_id IN (${placeholders}) AND status = 'short'
            GROUP BY category
            ORDER BY count DESC`,
-        )
+      )
         .bind(...sessionIds)
         .all<{ category: string; count: number }>();
 
@@ -715,9 +716,9 @@ async function handleGetDashboardStats(env: Env): Promise<Response> {
     }
 
     // Build stations array (include all active stations, even those with no sessions)
-    const allStations = await env.DB
-      .prepare('SELECT id, name, code FROM stations WHERE is_active = 1 ORDER BY id')
-      .all<{ id: number; name: string; code: string }>();
+    const allStations = await env.DB.prepare(
+      'SELECT id, name, code FROM stations WHERE is_active = 1 ORDER BY id',
+    ).all<{ id: number; name: string; code: string }>();
 
     const stations = allStations.results.map((st) => {
       const session = sessionMap.get(st.id);
@@ -733,9 +734,10 @@ async function handleGetDashboardStats(env: Env): Promise<Response> {
     });
 
     // 4. Order pipeline
-    const orderRows = await env.DB
-      .prepare('SELECT status, COUNT(*) as count FROM orders GROUP BY status')
-      .all<{ status: string; count: number }>();
+    const orderRows = await env.DB.prepare('SELECT status, COUNT(*) as count FROM orders GROUP BY status').all<{
+      status: string;
+      count: number;
+    }>();
 
     const orderMap = new Map(orderRows.results.map((r) => [r.status, r.count]));
     const orderPipeline = {
@@ -745,23 +747,21 @@ async function handleGetDashboardStats(env: Env): Promise<Response> {
     };
 
     // 5. Recent sessions
-    const recentRows = await env.DB
-      .prepare(
-        `SELECT s.id, s.submitted_at, s.submitted_by, s.item_count, s.items_short,
+    const recentRows = await env.DB.prepare(
+      `SELECT s.id, s.submitted_at, s.submitted_by, s.item_count, s.items_short,
                 st.name AS station_name
          FROM inventory_sessions s
          JOIN stations st ON st.id = s.station_id
          ORDER BY s.submitted_at DESC
          LIMIT 10`,
-      )
-      .all<{
-        id: number;
-        submitted_at: string;
-        submitted_by: string | null;
-        item_count: number;
-        items_short: number;
-        station_name: string;
-      }>();
+    ).all<{
+      id: number;
+      submitted_at: string;
+      submitted_by: string | null;
+      item_count: number;
+      items_short: number;
+      station_name: string;
+    }>();
 
     const recentSessions = recentRows.results.map((r) => ({
       id: r.id,

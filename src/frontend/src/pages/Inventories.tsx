@@ -21,9 +21,7 @@ export default function Inventories() {
     if (stationFilter) params.set('stationId', String(stationFilter));
 
     setError(null);
-    apiFetch<InventorySessionsResponse>(
-      `/inventory/sessions${params.toString() ? `?${params}` : ''}`,
-    )
+    apiFetch<InventorySessionsResponse>(`/inventory/sessions${params.toString() ? `?${params}` : ''}`)
       .then((data) => setSessions(data.sessions))
       .catch((err) => {
         setSessions([]);
@@ -45,9 +43,7 @@ export default function Inventories() {
       if (!sessionItems[sessionId]) {
         setItemsLoading(sessionId);
         try {
-          const data = await apiFetch<InventoryHistoryResponse>(
-            `/inventory/history?sessionId=${sessionId}`,
-          );
+          const data = await apiFetch<InventoryHistoryResponse>(`/inventory/history?sessionId=${sessionId}`);
           setSessionItems((prev) => ({ ...prev, [sessionId]: data.history }));
         } catch {
           setSessionItems((prev) => ({ ...prev, [sessionId]: [] }));
@@ -157,9 +153,7 @@ export default function Inventories() {
                   >
                     <div className="flex items-start justify-between">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-white truncate">
-                          {session.station_name}
-                        </p>
+                        <p className="text-sm font-medium text-white truncate">{session.station_name}</p>
                         <p className="text-xs text-zinc-500 mt-0.5">
                           {formatDate(session.submitted_at)} at {formatTime(session.submitted_at)}
                         </p>
@@ -173,9 +167,7 @@ export default function Inventories() {
                             {session.item_count} item{session.item_count !== 1 ? 's' : ''}
                           </p>
                           {session.items_short > 0 ? (
-                            <p className="text-xs font-medium text-ems-red mt-0.5">
-                              {session.items_short} short
-                            </p>
+                            <p className="text-xs font-medium text-ems-red mt-0.5">{session.items_short} short</p>
                           ) : (
                             <p className="text-xs font-medium text-ems-green mt-0.5">All good</p>
                           )}

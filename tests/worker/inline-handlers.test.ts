@@ -19,8 +19,14 @@ function makeSession(role: UserRole): Session {
 }
 
 const VALID_CATEGORIES: Category[] = [
-  'Airway', 'Breathing', 'Circulation', 'Medications',
-  'Splinting', 'Burn', 'OB/Peds', 'Misc',
+  'Airway',
+  'Breathing',
+  'Circulation',
+  'Medications',
+  'Splinting',
+  'Burn',
+  'OB/Peds',
+  'Misc',
 ];
 
 // ── Tests ────────────────────────────────────────────────────────────
@@ -97,7 +103,9 @@ describe('Inline Route Handlers (index.ts)', () => {
 
       const db = mock.asD1();
       await db
-        .prepare(`UPDATE items SET name = ?, category = ?, sort_order = ?, is_active = ?, updated_at = datetime('now') WHERE id = ?`)
+        .prepare(
+          `UPDATE items SET name = ?, category = ?, sort_order = ?, is_active = ?, updated_at = datetime('now') WHERE id = ?`,
+        )
         .bind('Updated Item', 'Airway', 1, 1, 42)
         .run();
 
@@ -221,7 +229,9 @@ describe('Inline Route Handlers (index.ts)', () => {
 
   describe('GET /api/inventory/history — handleGetHistory', () => {
     it('parses query params from URL', () => {
-      const url = new URL('https://emsinventory.dcvfd.org/api/inventory/history?stationName=Station+10&category=Airway&status=short&limit=50&offset=10');
+      const url = new URL(
+        'https://emsinventory.dcvfd.org/api/inventory/history?stationName=Station+10&category=Airway&status=short&limit=50&offset=10',
+      );
       expect(url.searchParams.get('stationName')).toBe('Station 10');
       expect(url.searchParams.get('category')).toBe('Airway');
       expect(url.searchParams.get('status')).toBe('short');
