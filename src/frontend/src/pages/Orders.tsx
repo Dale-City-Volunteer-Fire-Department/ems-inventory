@@ -59,7 +59,7 @@ export default function Orders() {
   const handleStatusTransition = useCallback(
     async (orderId: number, action: 'start' | 'fill') => {
       const newStatus: OrderStatus = action === 'start' ? 'in_progress' : 'filled';
-      const filledBy = action === 'fill' ? user?.name ?? 'Unknown' : undefined;
+      const filledBy = action === 'fill' ? (user?.name ?? 'Unknown') : undefined;
 
       // Optimistic update
       setOrders((prev) =>
@@ -140,9 +140,7 @@ export default function Orders() {
             >
               {f.label}
               {f.key !== 'all' && (
-                <span className="ml-1.5 text-xs opacity-70">
-                  {orders.filter((o) => o.status === f.key).length}
-                </span>
+                <span className="ml-1.5 text-xs opacity-70">{orders.filter((o) => o.status === f.key).length}</span>
               )}
             </button>
           ))}
@@ -178,9 +176,7 @@ export default function Orders() {
             <p className="text-zinc-400 font-medium">
               {statusFilter === 'all' ? 'No orders yet' : `No ${STATUS_LABELS[statusFilter]?.toLowerCase()} orders`}
             </p>
-            <p className="text-zinc-600 text-sm mt-1">
-              Orders are created automatically when shortages are detected
-            </p>
+            <p className="text-zinc-600 text-sm mt-1">Orders are created automatically when shortages are detected</p>
           </div>
         )}
 
@@ -191,10 +187,7 @@ export default function Orders() {
               const isActionLoading = actionLoading === order.id;
 
               return (
-                <div
-                  key={order.id}
-                  className="rounded-2xl bg-surface-raised p-4 border border-border-subtle"
-                >
+                <div key={order.id} className="rounded-2xl bg-surface-raised p-4 border border-border-subtle">
                   {/* Order header */}
                   <div className="flex items-start justify-between mb-2">
                     <div>
@@ -327,9 +320,7 @@ export default function Orders() {
                 type="button"
                 onClick={() => handleStatusTransition(confirmModal.orderId, confirmModal.action)}
                 className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-medium text-white active:scale-[0.98] transition-all ${
-                  confirmModal.action === 'start'
-                    ? 'bg-blue-600 hover:bg-blue-500'
-                    : 'bg-ems-green hover:bg-green-500'
+                  confirmModal.action === 'start' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-ems-green hover:bg-green-500'
                 }`}
               >
                 {confirmModal.action === 'start' ? 'Start' : 'Mark Filled'}

@@ -140,7 +140,7 @@ describe('RBAC Enforcement', () => {
       const session = makeSession('crew');
       const result = requireRole(session, 'logistics');
       expect(result).not.toBeNull();
-      const body = await result!.json() as { error: string };
+      const body = (await result!.json()) as { error: string };
       expect(body.error).toContain('logistics');
     });
 
@@ -148,7 +148,7 @@ describe('RBAC Enforcement', () => {
       const session = makeSession('crew');
       const result = requireRole(session, 'admin');
       expect(result).not.toBeNull();
-      const body = await result!.json() as { error: string };
+      const body = (await result!.json()) as { error: string };
       expect(body.error).toContain('admin');
       expect(body.error).toContain('role or higher');
     });

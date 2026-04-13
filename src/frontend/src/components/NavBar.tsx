@@ -103,7 +103,9 @@ export default function NavBar({ role }: NavBarProps) {
               }`}
             >
               <NavIcon icon={item.icon} active={active} />
-              <span className={`text-xs transition-colors ${active ? 'text-dcvfd-accent font-medium' : 'text-zinc-500'}`}>
+              <span
+                className={`text-xs transition-colors ${active ? 'text-dcvfd-accent font-medium' : 'text-zinc-500'}`}
+              >
                 {item.label}
               </span>
             </button>

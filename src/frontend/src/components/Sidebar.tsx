@@ -63,7 +63,12 @@ function SidebarIcon({ icon, active, prominent }: { icon: string; active: boolea
     case 'list':
       return (
         <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.75}
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+          />
         </svg>
       );
     case 'truck':
@@ -80,7 +85,12 @@ function SidebarIcon({ icon, active, prominent }: { icon: string; active: boolea
     case 'sliders':
       return (
         <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.75}
+            d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+          />
         </svg>
       );
     case 'users':
@@ -99,7 +109,15 @@ function SidebarIcon({ icon, active, prominent }: { icon: string; active: boolea
   }
 }
 
-export function UserAvatar({ name, photoUrl, size = 'md' }: { name: string; photoUrl?: string | null; size?: 'sm' | 'md' }) {
+export function UserAvatar({
+  name,
+  photoUrl,
+  size = 'md',
+}: {
+  name: string;
+  photoUrl?: string | null;
+  size?: 'sm' | 'md';
+}) {
   const dims = size === 'sm' ? 'h-8 w-8 text-xs' : 'h-9 w-9 text-sm';
   const initials = name
     .split(' ')
@@ -109,11 +127,15 @@ export function UserAvatar({ name, photoUrl, size = 'md' }: { name: string; phot
     .slice(0, 2);
 
   if (photoUrl) {
-    return <img src={photoUrl} alt={name} className={`${dims} rounded-full object-cover ring-2 ring-dcvfd-accent/30`} />;
+    return (
+      <img src={photoUrl} alt={name} className={`${dims} rounded-full object-cover ring-2 ring-dcvfd-accent/30`} />
+    );
   }
 
   return (
-    <div className={`${dims} rounded-full bg-dcvfd-accent/20 text-dcvfd-accent font-semibold flex items-center justify-center ring-2 ring-dcvfd-accent/20 shrink-0`}>
+    <div
+      className={`${dims} rounded-full bg-dcvfd-accent/20 text-dcvfd-accent font-semibold flex items-center justify-center ring-2 ring-dcvfd-accent/20 shrink-0`}
+    >
       {initials}
     </div>
   );
@@ -196,15 +218,10 @@ export default function Sidebar({ role, userName, onProfileClick, collapsed = fa
               title={collapsed ? item.label : undefined}
               className={`group flex w-full items-center rounded-lg text-sm font-medium transition-all ${
                 collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5'
-              } ${
-                active
-                  ? 'bg-dcvfd-light text-white shadow-sm'
-                  : 'text-zinc-300 hover:bg-dcvfd/40 hover:text-white'
-              }`}
+              } ${active ? 'bg-dcvfd-light text-white shadow-sm' : 'text-zinc-300 hover:bg-dcvfd/40 hover:text-white'}`}
             >
               <SidebarIcon icon={item.icon} active={active} />
               {!collapsed && item.label}
-
             </button>
           );
         })}

@@ -24,7 +24,7 @@ describe('Auth Middleware — requireAuth', () => {
     });
     const result = await requireAuth(request, env);
     expect(result).toBeInstanceOf(Response);
-    const body = await (result as Response).json() as { error: string };
+    const body = (await (result as Response).json()) as { error: string };
     expect(body.error).toBe('Authentication required');
   });
 

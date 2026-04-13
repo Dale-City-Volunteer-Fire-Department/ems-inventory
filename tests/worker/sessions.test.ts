@@ -170,7 +170,15 @@ describe('Inventory Sessions Endpoint', () => {
   describe('handler response shape', () => {
     it('wraps sessions in object with count', () => {
       const sessions = [
-        { id: 1, station_id: 10, station_name: 'Station 10', submitted_by: null, submitted_at: '2026-04-06', item_count: 20, items_short: 0 },
+        {
+          id: 1,
+          station_id: 10,
+          station_name: 'Station 10',
+          submitted_by: null,
+          submitted_at: '2026-04-06',
+          item_count: 20,
+          items_short: 0,
+        },
       ];
       const responseData = { sessions, count: sessions.length };
       expect(responseData.count).toBe(1);

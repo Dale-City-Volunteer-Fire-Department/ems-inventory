@@ -62,7 +62,9 @@ export default function InventoryForm({ station, onChangeStation }: InventoryFor
             </div>
             <div className="flex justify-between rounded-lg bg-surface-overlay px-4 py-2.5">
               <span className="text-zinc-400">Items short</span>
-              <span className={`font-mono font-medium ${submitResult.itemsShort > 0 ? 'text-ems-red' : 'text-ems-green'}`}>
+              <span
+                className={`font-mono font-medium ${submitResult.itemsShort > 0 ? 'text-ems-red' : 'text-ems-green'}`}
+              >
                 {submitResult.itemsShort}
               </span>
             </div>
@@ -154,9 +156,11 @@ export default function InventoryForm({ station, onChangeStation }: InventoryFor
               Submitting...
             </span>
           ) : canSubmit ? (
-            progress.remaining > 0
-              ? `Submit ${progress.entered} of ${progress.total} Items`
-              : 'Submit Inventory'
+            progress.remaining > 0 ? (
+              `Submit ${progress.entered} of ${progress.total} Items`
+            ) : (
+              'Submit Inventory'
+            )
           ) : (
             'Enter at least 1 item'
           )}
@@ -168,7 +172,12 @@ export default function InventoryForm({ station, onChangeStation }: InventoryFor
         <div className="text-center mb-4">
           <div className="mx-auto h-12 w-12 rounded-full bg-dcvfd/20 flex items-center justify-center mb-3">
             <svg className="h-6 w-6 text-dcvfd-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           </div>
           <h2 className="text-lg font-bold text-white">Submit Inventory?</h2>

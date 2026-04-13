@@ -273,7 +273,10 @@ export async function getSessions(db: D1Database, filters?: SessionFilters): Pro
                LIMIT ? OFFSET ?`;
   binds.push(limit, offset);
 
-  const result = await db.prepare(sql).bind(...binds).all<InventorySession>();
+  const result = await db
+    .prepare(sql)
+    .bind(...binds)
+    .all<InventorySession>();
   return result.results;
 }
 
