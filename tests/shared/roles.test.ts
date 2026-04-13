@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { ROLES } from '../../src/shared/roles';
-import type { UserRole } from '../../src/shared/types';
 
 // ── Tests ────────────────────────────────────────────────────────────
 

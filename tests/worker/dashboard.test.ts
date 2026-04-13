@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { StatefulD1Mock } from '../helpers/mocks';
-import { ok, badRequest, notFound, forbidden, serverError } from '../../src/worker/lib/response';
+import { ok } from '../../src/worker/lib/response';
 import { requireRole } from '../../src/worker/middleware/rbac';
 import type { UserRole } from '../../src/shared/types';
 import type { Session } from '../../src/worker/auth/session';
@@ -115,10 +115,7 @@ describe('Dashboard Stats Endpoint', () => {
   describe('database queries', () => {
     it('fetches latest sessions per station', async () => {
       const mock = new StatefulD1Mock();
-      let queryCalled = false;
-
       mock.onQuery('SELECT MAX(id) FROM inventory_sessions GROUP BY station_id', () => {
-        queryCalled = true;
         return [
           {
             id: 5,
