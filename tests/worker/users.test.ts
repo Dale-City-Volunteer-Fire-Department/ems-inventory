@@ -244,11 +244,13 @@ describe('User Management Endpoints', () => {
     });
 
     it('is_active: true maps to 1', () => {
-      expect(true ? 1 : 0).toBe(1);
+      const active = true;
+      expect(active ? 1 : 0).toBe(1);
     });
 
     it('is_active: false maps to 0', () => {
-      expect(false ? 1 : 0).toBe(0);
+      const inactive = false;
+      expect(inactive ? 1 : 0).toBe(0);
     });
   });
 

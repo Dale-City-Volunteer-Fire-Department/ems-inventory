@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { StatefulD1Mock } from '../helpers/mocks';
 import { getSessions } from '../../src/worker/lib/db';
-import { requireRole } from '../../src/worker/middleware/rbac';
 import type { UserRole } from '../../src/shared/types';
 import type { Session } from '../../src/worker/auth/session';
 

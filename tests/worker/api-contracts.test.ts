@@ -132,7 +132,7 @@ function seedOrders() {
 
 function seedUsers() {
   // For the GET /api/users query (includes JOIN)
-  mockDb.onQuery('SELECT u.id, u.email, u.name, u.role', (binds) => {
+  mockDb.onQuery('SELECT u.id, u.email, u.name, u.role', (_binds) => {
     // Differentiate between the user-list query and the single-user query
     return [
       { id: 1, email: 'admin@dcvfd.org', name: 'Admin User', role: 'admin', station_id: null, auth_method: 'entra_sso', is_active: 1, created_at: '2026-01-01', updated_at: '2026-01-01', last_login_at: null, station_name: null },

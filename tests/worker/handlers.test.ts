@@ -2,9 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { StatefulD1Mock, createMockEnv, createMockKV } from '../helpers/mocks';
 import {
   createSession,
-  destroySession,
-  parseSessionCookie,
-  buildClearSessionCookie,
 } from '../../src/worker/auth/session';
 import { handleAuthMe, handleAuthLogout } from '../../src/worker/auth/handlers';
 import type { UserRole } from '../../src/shared/types';
