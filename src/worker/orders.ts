@@ -5,6 +5,7 @@ import { getOrders, updateOrderStatus } from './lib/db';
 import { ok, badRequest, notFound, serverError } from './lib/response';
 import type { OrderStatus } from '@shared/types';
 import type { OrdersResponse, OrderUpdateResponse } from '@shared/api-responses';
+import { notifyOrderFulfilled } from './email/notify';
 
 const VALID_STATUSES: OrderStatus[] = ['pending', 'in_progress', 'filled'];
 const STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -49,7 +50,7 @@ export async function handleGetOrders(request: Request, env: Env): Promise<Respo
  * Status transitions: pending → in_progress → filled
  * TODO: Restrict to logistics/admin roles
  */
-export async function handleUpdateOrder(request: Request, env: Env): Promise<Response> {
+export async function handleUpdateOrder(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   try {
     const body = await request.json<{ orderId: number; status: OrderStatus; filledBy?: string }>();
 
@@ -75,6 +76,12 @@ export async function handleUpdateOrder(request: Request, env: Env): Promise<Res
     }
 
     await updateOrderStatus(env.DB, body.orderId, body.status, body.filledBy);
+
+    // Fire-and-forget fulfillment notification when order is marked filled
+    if (body.status === 'filled') {
+      ctx.waitUntil(notifyOrderFulfilled(env, body.orderId));
+    }
+
     return ok<OrderUpdateResponse>({ orderId: body.orderId, status: body.status });
   } catch (err) {
     return serverError(err instanceof Error ? err.message : 'Failed to update order');
