@@ -9,10 +9,10 @@ import { getHistory, getSessions } from './lib/db';
 import { ok, badRequest, notFound, forbidden, serverError } from './lib/response';
 import type { Category } from '../shared/types';
 import { handleEntraLogin, handleEntraCallback } from './auth/entra';
-import { handleMagicLinkRequest, handleMagicLinkVerify } from './auth/magic-link';
 import { handlePinAuth } from './auth/pin';
 import { handleAuthMe, handleAuthLogout } from './auth/handlers';
 import { requireAuth } from './middleware/auth';
+import { handlePublicVerifyPin, handlePublicUpload, handlePublicInventorySubmit, handlePublicGetInventory } from './public';
 import type { Session } from './middleware/auth';
 import { requireRole } from './middleware/rbac';
 import type { UserRole } from '../shared/types';
@@ -34,8 +34,14 @@ const ALLOWED_ORIGINS = [
   'http://127.0.0.1:5173',
 ];
 
-// Auth callback routes that are GET-based redirects and don't need CSRF
-const CSRF_EXEMPT_PATHS = ['/api/auth/entra/callback', '/api/auth/magic-link/verify'];
+// Auth callback routes that are GET-based redirects and don't need CSRF,
+// plus public endpoints that use X-Public-Token for verification
+const CSRF_EXEMPT_PATHS = [
+  '/api/auth/entra/callback',
+  '/api/public/verify-pin',
+  '/api/public/upload',
+  '/api/public/inventory/submit',
+];
 
 export function verifyCsrfOrigin(request: Request): Response | null {
   const method = request.method;
@@ -109,13 +115,6 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
   if (path === '/api/auth/entra/callback' && method === 'GET') {
     return handleEntraCallback(request, env);
   }
-  // Magic Link
-  if (path === '/api/auth/magic-link/request' && method === 'POST') {
-    return handleMagicLinkRequest(request, env);
-  }
-  if (path === '/api/auth/magic-link/verify' && method === 'GET') {
-    return handleMagicLinkVerify(request, env);
-  }
   // Station PIN
   if (path === '/api/auth/pin' && method === 'POST') {
     return handlePinAuth(request, env);
@@ -126,6 +125,21 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
   }
   if (path === '/api/auth/logout' && method === 'POST') {
     return handleAuthLogout(request, env);
+  }
+
+  // ── Public inventory submission (PIN-gated) ───────────────────────
+  if (path === '/api/public/verify-pin' && method === 'POST') {
+    return handlePublicVerifyPin(request, env);
+  }
+  if (path === '/api/public/upload' && method === 'POST') {
+    return handlePublicUpload(request, env);
+  }
+  if (path === '/api/public/inventory/submit' && method === 'POST') {
+    return handlePublicInventorySubmit(request, env);
+  }
+  // GET /api/public/inventory/:stationId — token-gated inventory template for public form
+  if (/^\/api\/public\/inventory\/\d+$/.test(path) && method === 'GET') {
+    return handlePublicGetInventory(request, env);
   }
 
   // ── Dashboard stats (logistics+) ──────────────────────────────────

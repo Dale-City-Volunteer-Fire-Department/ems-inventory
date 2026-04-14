@@ -41,7 +41,7 @@ describe('Auth Middleware — requireAuth', () => {
       name: 'Logistics Lead',
       role: 'logistics' as UserRole,
       stationId: 13,
-      authMethod: 'magic_link',
+      authMethod: 'entra_sso',
     });
 
     const request = new Request('https://emsinventory.dcvfd.org/api/orders', {

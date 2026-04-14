@@ -50,6 +50,9 @@ export interface InventorySession {
   submitted_at: string;
   item_count: number;
   items_short: number;
+  notes?: string | null;
+  is_public?: boolean;
+  submitter_name?: string | null;
 }
 
 export interface InventoryHistoryResponse {

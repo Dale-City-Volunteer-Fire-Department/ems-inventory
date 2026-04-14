@@ -8,7 +8,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import worker from '../../src/worker/index';
-import { StatefulD1Mock, createMockKV, makeItem, makeTemplateItem } from '../helpers/mocks';
+import { StatefulD1Mock, createMockKV, createMockR2, makeItem, makeTemplateItem } from '../helpers/mocks';
 import { createSession } from '../../src/worker/auth/session';
 import type { Env } from '../../src/worker/types';
 import type { UserRole } from '../../src/shared/types';
@@ -33,14 +33,13 @@ function buildMockEnv(db: StatefulD1Mock, kv: KVNamespace): Env {
     DB: db.asD1(),
     SESSIONS: kv,
     ASSETS: createMockAssets(),
+    ATTACHMENTS: createMockR2(),
     APP_NAME: 'ems-inventory-test',
     ORG_NAME: 'DCVFD',
     AZURE_AD_CLIENT_ID: 'test-client-id',
     AZURE_AD_TENANT_ID: 'test-tenant-id',
     AZURE_AD_CLIENT_SECRET: 'test-client-secret',
     STATION_PIN: '5214',
-    MAGIC_LINK_SECRET: 'test-magic-link-secret-key-for-testing',
-    RESEND_API_KEY: 'test-resend-key',
   };
 }
 

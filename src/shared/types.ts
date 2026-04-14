@@ -72,3 +72,13 @@ export type Category =
 export type CountStatus = 'not_entered' | 'good' | 'over' | 'short';
 export type OrderStatus = 'pending' | 'in_progress' | 'filled';
 export type UserRole = 'crew' | 'logistics' | 'admin';
+
+export interface InventoryAttachment {
+  id: number;
+  session_id: string;
+  filename: string;
+  r2_key: string;
+  content_type: string;
+  size_bytes: number | null;
+  uploaded_at: string;
+}

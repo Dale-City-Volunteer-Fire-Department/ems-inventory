@@ -17,7 +17,7 @@ export function handleCorsPreflightRequest(request: Request): Response | null {
   const origin = getAllowedOrigin(request);
   const headers: Record<string, string> = {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Public-Token',
     'Access-Control-Max-Age': '86400',
   };
   if (origin) {

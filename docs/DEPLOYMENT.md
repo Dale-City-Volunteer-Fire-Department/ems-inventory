@@ -14,9 +14,12 @@
    ```bash
    wrangler secret put AZURE_AD_CLIENT_ID
    wrangler secret put AZURE_AD_TENANT_ID
+   wrangler secret put AZURE_AD_CLIENT_SECRET
    wrangler secret put STATION_PIN
-   wrangler secret put MAGIC_LINK_SECRET
    ```
+
+   The PIN is used both by the authenticated PIN login (`/api/auth/pin`) and the
+   public form at `/submit` (`/api/public/verify-pin`).
 3. Run migrations:
    ```bash
    wrangler d1 migrations apply ems-inventory-db
