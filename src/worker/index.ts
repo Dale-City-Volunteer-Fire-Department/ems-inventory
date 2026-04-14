@@ -9,7 +9,6 @@ import { getHistory, getSessions } from './lib/db';
 import { ok, badRequest, notFound, forbidden, serverError } from './lib/response';
 import type { Category } from '../shared/types';
 import { handleEntraLogin, handleEntraCallback } from './auth/entra';
-import { handleMagicLinkRequest, handleMagicLinkVerify } from './auth/magic-link';
 import { handlePinAuth } from './auth/pin';
 import { handleAuthMe, handleAuthLogout } from './auth/handlers';
 import { requireAuth } from './middleware/auth';
@@ -37,7 +36,6 @@ const ALLOWED_ORIGINS = [
 // Auth callback routes that are GET-based redirects and don't need CSRF
 const CSRF_EXEMPT_PATHS = [
   '/api/auth/entra/callback',
-  '/api/auth/magic-link/verify',
 ];
 
 export function verifyCsrfOrigin(request: Request): Response | null {
@@ -111,13 +109,6 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
   }
   if (path === '/api/auth/entra/callback' && method === 'GET') {
     return handleEntraCallback(request, env);
-  }
-  // Magic Link
-  if (path === '/api/auth/magic-link/request' && method === 'POST') {
-    return handleMagicLinkRequest(request, env);
-  }
-  if (path === '/api/auth/magic-link/verify' && method === 'GET') {
-    return handleMagicLinkVerify(request, env);
   }
   // Station PIN
   if (path === '/api/auth/pin' && method === 'POST') {

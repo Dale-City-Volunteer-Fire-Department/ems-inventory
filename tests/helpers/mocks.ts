@@ -293,7 +293,6 @@ export function createMockEnv(overrides?: Partial<Env>): Env {
     AZURE_AD_CLIENT_ID: 'test-client-id',
     AZURE_AD_TENANT_ID: 'test-tenant-id',
     STATION_PIN: '5214',
-    MAGIC_LINK_SECRET: 'test-magic-link-secret-key-for-testing',
     ...overrides,
   };
 }

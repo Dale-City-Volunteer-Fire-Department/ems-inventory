@@ -154,11 +154,6 @@ describe('CSRF Origin Verification', () => {
       expect(result).toBeNull();
     });
 
-    it('POST /api/auth/magic-link/verify is exempt (no Origin needed)', () => {
-      const result = verifyCsrfOrigin(makeRequest('POST', '/api/auth/magic-link/verify'));
-      expect(result).toBeNull();
-    });
-
     it('exempt paths pass even with invalid Origin', () => {
       const result = verifyCsrfOrigin(
         makeRequest('POST', '/api/auth/entra/callback', 'https://evil.com'),

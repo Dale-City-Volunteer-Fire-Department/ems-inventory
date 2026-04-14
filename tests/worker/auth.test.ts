@@ -133,26 +133,6 @@ describe('Auth Logic', () => {
       expect(Math.abs(ttlMs - twentyFourHoursMs)).toBeLessThan(5000);
     });
 
-    it('magic link session has 30-day TTL', async () => {
-      const env = createMockEnv();
-
-      const { session } = await createSession(env, {
-        userId: 2,
-        email: 'logistics@dcvfd.org',
-        name: 'Logistics Lead',
-        role: 'logistics' as UserRole,
-        stationId: 13,
-        authMethod: 'magic_link',
-      });
-
-      const expiresAt = new Date(session.expiresAt).getTime();
-      const now = Date.now();
-      const ttlMs = expiresAt - now;
-      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-
-      expect(Math.abs(ttlMs - thirtyDaysMs)).toBeLessThan(5000);
-    });
-
     it('SSO session has 30-day TTL', async () => {
       const env = createMockEnv();
 
@@ -174,7 +154,7 @@ describe('Auth Logic', () => {
     });
   });
 
-  describe('magic link token generation and validation', () => {
+  describe('session ID generation', () => {
     it('generates a unique session ID for each session', async () => {
       const env = createMockEnv();
 
@@ -184,7 +164,7 @@ describe('Auth Logic', () => {
         name: 'User 1',
         role: 'crew' as UserRole,
         stationId: 10,
-        authMethod: 'magic_link',
+        authMethod: 'entra_sso',
       });
 
       const session2 = await createSession(env, {
@@ -193,7 +173,7 @@ describe('Auth Logic', () => {
         name: 'User 2',
         role: 'crew' as UserRole,
         stationId: 13,
-        authMethod: 'magic_link',
+        authMethod: 'entra_sso',
       });
 
       expect(session1.sessionId).not.toBe(session2.sessionId);
@@ -208,14 +188,14 @@ describe('Auth Logic', () => {
         name: 'User',
         role: 'crew' as UserRole,
         stationId: 10,
-        authMethod: 'magic_link',
+        authMethod: 'entra_sso',
       });
 
       expect(sessionId).toMatch(/^[0-9a-f]{64}$/);
     });
   });
 
-  describe('expired magic link token', () => {
+  describe('expired session token', () => {
     it('returns null for an expired session (KV TTL)', async () => {
       // Mock KV that simulates expiration
       const kv = createMockKV();
@@ -229,7 +209,7 @@ describe('Auth Logic', () => {
           name: 'User',
           role: 'crew',
           stationId: 10,
-          authMethod: 'magic_link',
+          authMethod: 'entra_sso',
           expiresAt: '2020-01-01T00:00:00.000Z', // expired
         }),
         { expiration: Math.floor(Date.now() / 1000) - 3600 }, // expired 1 hour ago
@@ -341,7 +321,7 @@ describe('Auth Logic', () => {
         name: 'Deactivated User',
         role: 'logistics' as UserRole,
         stationId: 13,
-        authMethod: 'magic_link',
+        authMethod: 'entra_sso',
       });
 
       const request = new Request('https://emsinventory.dcvfd.org/api/items', {

@@ -39,8 +39,6 @@ function buildMockEnv(db: StatefulD1Mock, kv: KVNamespace): Env {
     AZURE_AD_TENANT_ID: 'test-tenant-id',
     AZURE_AD_CLIENT_SECRET: 'test-client-secret',
     STATION_PIN: '5214',
-    MAGIC_LINK_SECRET: 'test-magic-link-secret-key-for-testing',
-    RESEND_API_KEY: 'test-resend-key',
   };
 }
 

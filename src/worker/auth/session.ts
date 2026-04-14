@@ -9,7 +9,7 @@ export interface Session {
   name: string;
   role: UserRole;
   stationId: number | null;
-  authMethod: 'entra_sso' | 'magic_link' | 'pin';
+  authMethod: 'entra_sso' | 'pin';
   photoUrl?: string | null;
   expiresAt: string; // ISO timestamp
 }
@@ -18,8 +18,6 @@ export interface Session {
 
 /** 30 days in seconds */
 const SSO_TTL = 30 * 24 * 60 * 60;
-/** 30 days in seconds */
-const MAGIC_LINK_TTL = 30 * 24 * 60 * 60;
 /** 24 hours in seconds */
 const PIN_TTL = 24 * 60 * 60;
 
@@ -27,8 +25,6 @@ function ttlForMethod(authMethod: Session['authMethod']): number {
   switch (authMethod) {
     case 'entra_sso':
       return SSO_TTL;
-    case 'magic_link':
-      return MAGIC_LINK_TTL;
     case 'pin':
       return PIN_TTL;
   }

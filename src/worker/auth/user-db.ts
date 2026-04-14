@@ -7,7 +7,7 @@ export interface UserRecord {
   email: string | null;
   name: string;
   role: UserRole;
-  authMethod: 'entra_sso' | 'magic_link' | 'pin';
+  authMethod: 'entra_sso' | 'pin';
   stationId: number | null;
   isActive: boolean;
 }
@@ -16,12 +16,12 @@ export interface UserRecord {
 
 /**
  * Create or update a user record based on email + auth_method.
- * For SSO and magic link users, email is the unique key.
+ * For SSO users, email is the unique key.
  * Returns the user record with current role (does not overwrite role on update).
  */
 export async function upsertUser(
   db: D1Database,
-  data: { email: string; name: string; authMethod: 'entra_sso' | 'magic_link' },
+  data: { email: string; name: string; authMethod: 'entra_sso' },
 ): Promise<UserRecord | null> {
   // Check if user already exists
   const existing = await db
