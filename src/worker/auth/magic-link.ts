@@ -12,6 +12,8 @@ import { renderMagicLinkEmail } from '../email/templates';
 const MAGIC_LINK_TTL = 30 * 60; // 30 minutes in seconds
 const RATE_LIMIT_WINDOW = 60 * 60; // 1 hour in seconds
 const MAX_REQUESTS_PER_HOUR = 5;
+const MAX_REQUESTS_PER_HOUR_IP = 20;
+const SESSION_TOKEN_TTL = 2 * 60 * 60; // 2 hours in seconds
 const PUBLIC_FORM_URL = 'https://emsinventory.dcvfd.org/submit';
 
 // ── Interfaces ───────────────────────────────────────────────────────
@@ -32,9 +34,18 @@ function magicTokenKey(token: string): string {
   return `magic:${token}`;
 }
 
-function rateLimitKey(email: string): string {
-  // Hash the email to avoid storing PII in KV keys; use a simple encoding
-  return `magic_rl:${encodeURIComponent(email.toLowerCase())}`;
+// MEDIUM-1: Hash the email with SHA-256 so PII is never stored in KV keys
+async function rateLimitKey(email: string): Promise<string> {
+  const data = new TextEncoder().encode(email.toLowerCase());
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  const hex = Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `magic_rl:${hex}`;
+}
+
+function ipRateLimitKey(ip: string): string {
+  return `magic_rl_ip:${ip}`;
 }
 
 // ── Email validation ─────────────────────────────────────────────────
@@ -73,7 +84,7 @@ async function generateHmacToken(email: string, timestamp: number, secret: strin
 // ── Rate limiting ────────────────────────────────────────────────────
 
 async function checkRateLimit(kv: KVNamespace, email: string): Promise<boolean> {
-  const key = rateLimitKey(email);
+  const key = await rateLimitKey(email);
   const raw = await kv.get(key, 'text');
 
   const now = Math.floor(Date.now() / 1000);
@@ -104,6 +115,37 @@ async function checkRateLimit(kv: KVNamespace, email: string): Promise<boolean> 
   return true;
 }
 
+// MEDIUM-2: IP-based rate limit — 20 requests per hour per IP
+async function checkIpRateLimit(kv: KVNamespace, ip: string): Promise<boolean> {
+  const key = ipRateLimitKey(ip);
+  const raw = await kv.get(key, 'text');
+
+  const now = Math.floor(Date.now() / 1000);
+
+  if (raw) {
+    try {
+      const data = JSON.parse(raw) as RateLimitData;
+      if (now - data.window_start < RATE_LIMIT_WINDOW) {
+        if (data.count >= MAX_REQUESTS_PER_HOUR_IP) {
+          return false; // rate limited
+        }
+        data.count += 1;
+        await kv.put(key, JSON.stringify(data), {
+          expirationTtl: RATE_LIMIT_WINDOW - (now - data.window_start),
+        });
+        return true;
+      }
+    } catch {
+      // Corrupt data — reset below
+    }
+  }
+
+  // First request or window expired — start fresh
+  const data: RateLimitData = { count: 1, window_start: now };
+  await kv.put(key, JSON.stringify(data), { expirationTtl: RATE_LIMIT_WINDOW });
+  return true;
+}
+
 // ── Handlers ─────────────────────────────────────────────────────────
 
 /**
@@ -113,6 +155,16 @@ async function checkRateLimit(kv: KVNamespace, email: string): Promise<boolean> 
  */
 export async function handleMagicLinkRequest(request: Request, env: Env): Promise<Response> {
   try {
+    // MEDIUM-2: IP-based rate limit — check before email limit
+    const ip = request.headers.get('CF-Connecting-IP');
+    if (!ip || ip === 'unknown') {
+      return badRequest('Unable to determine client IP');
+    }
+    const ipAllowed = await checkIpRateLimit(env.SESSIONS, ip);
+    if (!ipAllowed) {
+      return tooManyRequests('Too many sign-in requests. Please try again later.');
+    }
+
     const body = (await request.json()) as { email?: string };
 
     if (!body.email || typeof body.email !== 'string') {
@@ -163,7 +215,8 @@ export async function handleMagicLinkRequest(request: Request, env: Env): Promis
 /**
  * GET /api/public/magic-link/verify?token={token}
  * Returns: { success: true, email: string, token: string }
- * Token remains valid for the remainder of the 30-min window (reusable).
+ * HIGH-1: The magic link token is consumed on first use. A new short-lived
+ * session token is issued and returned — the client uses this going forward.
  */
 export async function handleMagicLinkVerify(request: Request, env: Env): Promise<Response> {
   try {
@@ -186,7 +239,29 @@ export async function handleMagicLinkVerify(request: Request, env: Env): Promise
       return ok({ success: false, error: 'Invalid token data' });
     }
 
-    return ok({ success: true, email: tokenData.email, token });
+    const email = tokenData.email;
+
+    // HIGH-1: Invalidate the magic link token immediately — one-time use only
+    await env.SESSIONS.delete(magicTokenKey(token));
+
+    // Issue a new session token stored under the public: prefix with counters and 2h TTL
+    const sessionBytes = new Uint8Array(32);
+    crypto.getRandomValues(sessionBytes);
+    const sessionToken = Array.from(sessionBytes)
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    const sessionData = {
+      email,
+      created: Date.now(),
+      submissions: 0,
+      uploads: 0,
+    };
+    await env.SESSIONS.put(`public:${sessionToken}`, JSON.stringify(sessionData), {
+      expirationTtl: SESSION_TOKEN_TTL,
+    });
+
+    return ok({ success: true, email, token: sessionToken });
   } catch (err) {
     console.error('[handleMagicLinkVerify]', err);
     return serverError('Failed to verify sign-in link');

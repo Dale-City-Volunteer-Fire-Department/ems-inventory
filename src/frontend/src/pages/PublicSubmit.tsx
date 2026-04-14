@@ -92,7 +92,8 @@ export default function PublicSubmit() {
       }
       const data = (await res.json()) as { success: boolean; email?: string; token?: string; error?: string };
       if (!data.success) {
-        setError(data.error ?? 'This sign-in link is invalid or has expired. Please request a new one.');
+        // MEDIUM-3: Never surface server error strings to users
+        setError('This sign-in link is invalid or has expired. Please request a new one.');
         setStep('email');
         return;
       }
@@ -119,12 +120,14 @@ export default function PublicSubmit() {
         body: JSON.stringify({ email }),
       });
       if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        throw new Error(data.error ?? 'Failed to send sign-in link');
+        // MEDIUM-3: Never surface server error strings to users
+        setError('Unable to send sign-in link. Please try again.');
+        return;
       }
       setStep('email-sent');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to send sign-in link');
+    } catch {
+      // MEDIUM-3: Never surface server error strings to users
+      setError('Unable to send sign-in link. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -245,15 +248,17 @@ export default function PublicSubmit() {
           });
 
           if (!res.ok) {
-            const data = (await res.json()) as { error?: string };
-            throw new Error(data.error ?? 'Upload failed');
+            // MEDIUM-3: Never surface server error strings to users
+            setError('Upload failed. Please try again.');
+            continue;
           }
 
           const data = (await res.json()) as UploadedAttachment;
           newAttachments.push(data);
           newPreviews.push({ file, url: URL.createObjectURL(file) });
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Upload failed');
+        } catch {
+          // MEDIUM-3: Never surface server error strings to users
+          setError('Upload failed. Please try again.');
         }
       }
 
@@ -307,15 +312,17 @@ export default function PublicSubmit() {
       });
 
       if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        throw new Error(data.error ?? 'Submission failed');
+        // MEDIUM-3: Never surface server error strings to users
+        setError('Submission failed. Please try again.');
+        return;
       }
 
       const data = (await res.json()) as SubmitResult;
       setSubmitResult(data);
       setStep('success');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to submit inventory');
+    } catch {
+      // MEDIUM-3: Never surface server error strings to users
+      setError('Submission failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
