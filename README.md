@@ -106,6 +106,7 @@ src/
 │   ├── src/
 │   │   ├── pages/           # Page components
 │   │   │   ├── Login.tsx
+│   │   │   ├── PublicSubmit.tsx
 │   │   │   ├── StationSelect.tsx
 │   │   │   ├── InventoryForm.tsx
 │   │   │   ├── Dashboard.tsx
@@ -150,6 +151,7 @@ src/
 │   ├── inventory.ts         # Inventory handlers
 │   ├── items.ts             # Item CRUD handlers
 │   ├── orders.ts            # Order handlers
+│   ├── public.ts            # PIN-gated public form endpoints
 │   ├── stations.ts          # Station handlers
 │   ├── stock-targets.ts     # PAR level handlers
 │   └── types.ts             # Worker environment types
@@ -339,11 +341,12 @@ Set in `wrangler.toml` (non-secret, checked into source):
 
 ### Bindings
 
-| Binding    | Type   | Purpose                  |
-| ---------- | ------ | ------------------------ |
-| `DB`       | D1     | Primary database         |
-| `SESSIONS` | KV     | Session token storage    |
-| `ASSETS`   | Assets | Built SPA static files   |
+| Binding       | Type   | Purpose                              |
+| ------------- | ------ | ------------------------------------ |
+| `DB`          | D1     | Primary database                     |
+| `SESSIONS`    | KV     | Session + public token storage       |
+| `ASSETS`      | Assets | Built SPA static files               |
+| `ATTACHMENTS` | R2     | Inventory photo/image attachments    |
 
 ---
 
@@ -362,6 +365,7 @@ The application uses Cloudflare D1 (SQLite at the edge). Schema is managed throu
 | `inventory_history`  | Permanent archive with plain-text snapshots of each line item |
 | `orders`             | Resupply pick lists with status tracking                      |
 | `users`              | User accounts with role, auth method, and station assignment  |
+| `inventory_attachments` | Photo/image attachments linked to inventory sessions       |
 | `config`             | Runtime key-value configuration                               |
 
 ### Categories
@@ -380,6 +384,7 @@ Key types from `src/shared/types.ts`:
 - `InventoryCount` -- item_id, station_id, target_count, actual_count, delta, status
 - `InventoryHistory` -- plain-text snapshot (item_name, category, station_name, counts, delta, status)
 - `Order` -- station_id, session_id, items_short, pick_list, status (pending/in_progress/filled)
+- `InventoryAttachment` -- session_id, filename, r2_key, content_type, size_bytes
 
 Status enums: `CountStatus` (not_entered, good, over, short), `OrderStatus` (pending, in_progress, filled), `UserRole` (crew, logistics, admin).
 
@@ -392,6 +397,8 @@ wrangler d1 migrations apply ems-inventory-db
 Current migrations:
 
 - `0001_initial_schema.sql` -- All tables, indexes, station seed data, initial config
+- `0002_add_users_updated_at.sql` -- Add updated_at column to users table
+- `0003_public_inventory_notes_attachments.sql` -- Add notes, is_public, submitter_name to inventory_sessions; create inventory_attachments table
 
 ---
 
