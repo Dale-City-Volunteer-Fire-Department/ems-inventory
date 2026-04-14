@@ -15,6 +15,7 @@ import { requireAuth } from './middleware/auth';
 import { handlePublicVerifyPin, handlePublicUpload, handlePublicInventorySubmit, handlePublicGetInventory } from './public';
 import type { Session } from './middleware/auth';
 import { requireRole } from './middleware/rbac';
+import { notifyInventorySubmitted } from './email/notify';
 import type { UserRole } from '../shared/types';
 import type {
   HealthResponse,
@@ -82,7 +83,7 @@ const VALID_CATEGORIES: Category[] = [
 ];
 
 export default {
-  async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     // Handle CORS preflight
     const corsResponse = handleCorsPreflightRequest(request);
     if (corsResponse) return corsResponse;
@@ -92,12 +93,12 @@ export default {
     if (csrfResult) return addCorsHeaders(request, csrfResult);
 
     // Route the request and add CORS headers to the response
-    const response = await routeRequest(request, env);
+    const response = await routeRequest(request, env, ctx);
     return addCorsHeaders(request, response);
   },
 };
 
-async function routeRequest(request: Request, env: Env): Promise<Response> {
+async function routeRequest(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname;
   const method = request.method;
@@ -135,7 +136,20 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
     return handlePublicUpload(request, env);
   }
   if (path === '/api/public/inventory/submit' && method === 'POST') {
-    return handlePublicInventorySubmit(request, env);
+    const publicInventoryResponse = await handlePublicInventorySubmit(request, env);
+    // Fire-and-forget email notification — parse session_id from successful response
+    if (publicInventoryResponse.ok) {
+      try {
+        const clone = publicInventoryResponse.clone();
+        const body = await clone.json<{ session_id?: number }>();
+        if (body.session_id) {
+          ctx.waitUntil(notifyInventorySubmitted(env, body.session_id));
+        }
+      } catch {
+        // Ignore parse errors — notification is best-effort
+      }
+    }
+    return publicInventoryResponse;
   }
   // GET /api/public/inventory/:stationId — token-gated inventory template for public form
   if (/^\/api\/public\/inventory\/\d+$/.test(path) && method === 'GET') {
@@ -217,7 +231,20 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
   if (path === '/api/inventory/submit' && method === 'POST') {
     const session = await requireAuth(request, env);
     if (session instanceof Response) return session;
-    return handleSubmitInventory(request, env);
+    const inventoryResponse = await handleSubmitInventory(request, env);
+    // Fire-and-forget email notification — parse sessionId from successful response
+    if (inventoryResponse.ok) {
+      try {
+        const clone = inventoryResponse.clone();
+        const body = await clone.json<{ sessionId?: number }>();
+        if (body.sessionId) {
+          ctx.waitUntil(notifyInventorySubmitted(env, body.sessionId));
+        }
+      } catch {
+        // Ignore parse errors — notification is best-effort
+      }
+    }
+    return inventoryResponse;
   }
   // GET /api/inventory/history — requires auth (any role)
   if (path === '/api/inventory/history' && method === 'GET') {
@@ -239,7 +266,7 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
     if (session instanceof Response) return session;
     const denied = requireRole(session, 'logistics');
     if (denied) return denied;
-    return handleUpdateOrder(request, env);
+    return handleUpdateOrder(request, env, ctx);
   }
 
   // ── Users (admin only) ────────────────────────────────────────────

@@ -338,7 +338,9 @@ export function createMockEnv(overrides?: Partial<Env>): Env {
     ORG_NAME: 'DCVFD',
     AZURE_AD_CLIENT_ID: 'test-client-id',
     AZURE_AD_TENANT_ID: 'test-tenant-id',
+    AZURE_AD_CLIENT_SECRET: 'test-client-secret',
     STATION_PIN: '5214',
+    RESEND_API_KEY: 'test-resend-key',
     ...overrides,
   };
 }
