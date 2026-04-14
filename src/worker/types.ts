@@ -10,4 +10,5 @@ export interface Env {
   AZURE_AD_CLIENT_SECRET: string;
   STATION_PIN: string;
   RESEND_API_KEY: string;
+  MAGIC_LINK_SECRET: string;
 }

@@ -13,6 +13,7 @@ import { handlePinAuth } from './auth/pin';
 import { handleAuthMe, handleAuthLogout } from './auth/handlers';
 import { requireAuth } from './middleware/auth';
 import { handlePublicVerifyPin, handlePublicUpload, handlePublicInventorySubmit, handlePublicGetInventory } from './public';
+import { handleMagicLinkRequest, handleMagicLinkVerify } from './auth/magic-link';
 import type { Session } from './middleware/auth';
 import { requireRole } from './middleware/rbac';
 import { notifyInventorySubmitted } from './email/notify';
@@ -42,6 +43,7 @@ const CSRF_EXEMPT_PATHS = [
   '/api/public/verify-pin',
   '/api/public/upload',
   '/api/public/inventory/submit',
+  '/api/public/magic-link/request',
 ];
 
 export function verifyCsrfOrigin(request: Request): Response | null {
@@ -128,7 +130,15 @@ async function routeRequest(request: Request, env: Env, ctx: ExecutionContext): 
     return handleAuthLogout(request, env);
   }
 
-  // ── Public inventory submission (PIN-gated) ───────────────────────
+  // ── Public magic link auth ────────────────────────────────────────
+  if (path === '/api/public/magic-link/request' && method === 'POST') {
+    return handleMagicLinkRequest(request, env);
+  }
+  if (path === '/api/public/magic-link/verify' && method === 'GET') {
+    return handleMagicLinkVerify(request, env);
+  }
+
+  // ── Public inventory submission (PIN-gated or magic-link-gated) ───
   if (path === '/api/public/verify-pin' && method === 'POST') {
     return handlePublicVerifyPin(request, env);
   }
