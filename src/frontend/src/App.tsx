@@ -11,6 +11,7 @@ import Inventories from './pages/Inventories';
 import Orders from './pages/Orders';
 import ParManagement from './pages/ParManagement';
 import AdminPanel from './pages/AdminPanel';
+import PublicSubmit from './pages/PublicSubmit';
 import Layout from './components/Layout';
 import './index.css';
 
@@ -100,9 +101,19 @@ function AuthGate() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AuthGate />
-      </AuthProvider>
+      <Routes>
+        {/* Public route — outside AuthGate, uses its own PIN verification */}
+        <Route path="/submit" element={<PublicSubmit />} />
+        {/* All other routes go through auth */}
+        <Route
+          path="*"
+          element={
+            <AuthProvider>
+              <AuthGate />
+            </AuthProvider>
+          }
+        />
+      </Routes>
     </BrowserRouter>
   );
 }

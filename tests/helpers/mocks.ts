@@ -282,12 +282,58 @@ export function createMockKV(): KVNamespace {
   } as unknown as KVNamespace;
 }
 
+// ── R2 Mock ────────────────────────────────────────────────────────────
+
+export function createMockR2(): R2Bucket {
+  const store = new Map<string, { body: ArrayBuffer; httpMetadata?: Record<string, string>; customMetadata?: Record<string, string> }>();
+
+  return {
+    async put(key: string, value: ReadableStream | ArrayBuffer | string | null | Blob, _options?: unknown): Promise<R2Object> {
+      let buf: ArrayBuffer;
+      if (value instanceof ArrayBuffer) {
+        buf = value;
+      } else if (typeof value === 'string') {
+        buf = new TextEncoder().encode(value).buffer as ArrayBuffer;
+      } else {
+        buf = new ArrayBuffer(0);
+      }
+      store.set(key, { body: buf });
+      return { key, size: buf.byteLength, uploaded: new Date() } as unknown as R2Object;
+    },
+    async get(key: string): Promise<R2ObjectBody | null> {
+      const entry = store.get(key);
+      if (!entry) return null;
+      return { key, body: new ReadableStream(), arrayBuffer: async () => entry.body } as unknown as R2ObjectBody;
+    },
+    async head(key: string): Promise<R2Object | null> {
+      const entry = store.get(key);
+      if (!entry) return null;
+      return { key, size: entry.body.byteLength } as unknown as R2Object;
+    },
+    async delete(key: string | string[]): Promise<void> {
+      const keys = Array.isArray(key) ? key : [key];
+      for (const k of keys) store.delete(k);
+    },
+    async list(): Promise<R2Objects> {
+      const objects = Array.from(store.keys()).map((key) => ({ key }));
+      return { objects, truncated: false } as unknown as R2Objects;
+    },
+    async createMultipartUpload(): Promise<R2MultipartUpload> {
+      throw new Error('Not implemented in mock');
+    },
+    async resumeMultipartUpload(): Promise<R2MultipartUpload> {
+      throw new Error('Not implemented in mock');
+    },
+  } as unknown as R2Bucket;
+}
+
 // ── Env Factory ──────────────────────────────────────────────────────
 
 export function createMockEnv(overrides?: Partial<Env>): Env {
   return {
     DB: createMockD1(),
     SESSIONS: createMockKV(),
+    ATTACHMENTS: createMockR2(),
     APP_NAME: 'ems-inventory-test',
     ORG_NAME: 'DCVFD',
     AZURE_AD_CLIENT_ID: 'test-client-id',

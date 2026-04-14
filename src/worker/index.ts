@@ -12,6 +12,7 @@ import { handleEntraLogin, handleEntraCallback } from './auth/entra';
 import { handlePinAuth } from './auth/pin';
 import { handleAuthMe, handleAuthLogout } from './auth/handlers';
 import { requireAuth } from './middleware/auth';
+import { handlePublicVerifyPin, handlePublicUpload, handlePublicInventorySubmit } from './public';
 import type { Session } from './middleware/auth';
 import { requireRole } from './middleware/rbac';
 import type { UserRole } from '../shared/types';
@@ -33,9 +34,13 @@ const ALLOWED_ORIGINS = [
   'http://127.0.0.1:5173',
 ];
 
-// Auth callback routes that are GET-based redirects and don't need CSRF
+// Auth callback routes that are GET-based redirects and don't need CSRF,
+// plus public endpoints that use X-Public-Token for verification
 const CSRF_EXEMPT_PATHS = [
   '/api/auth/entra/callback',
+  '/api/public/verify-pin',
+  '/api/public/upload',
+  '/api/public/inventory/submit',
 ];
 
 export function verifyCsrfOrigin(request: Request): Response | null {
@@ -120,6 +125,17 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
   }
   if (path === '/api/auth/logout' && method === 'POST') {
     return handleAuthLogout(request, env);
+  }
+
+  // ── Public inventory submission (PIN-gated) ───────────────────────
+  if (path === '/api/public/verify-pin' && method === 'POST') {
+    return handlePublicVerifyPin(request, env);
+  }
+  if (path === '/api/public/upload' && method === 'POST') {
+    return handlePublicUpload(request, env);
+  }
+  if (path === '/api/public/inventory/submit' && method === 'POST') {
+    return handlePublicInventorySubmit(request, env);
   }
 
   // ── Dashboard stats (logistics+) ──────────────────────────────────
