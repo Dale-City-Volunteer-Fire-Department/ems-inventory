@@ -77,16 +77,25 @@ describe('Inventory Submission', () => {
       expect(result.orderId).toBeNull();
     });
 
-    it('rejects submission when items are missing counts', async () => {
+    it('accepts partial submission when some items are missing counts', async () => {
       const mock = setupInventoryDb({});
       const db = mock.asD1();
 
-      await expect(
-        submitInventory(db, 10, [
-          { itemId: 1, actualCount: 4 },
-          // Missing itemId 2 and 3
-        ]),
-      ).rejects.toThrow('Missing counts');
+      const result = await submitInventory(db, 10, [
+        { itemId: 1, actualCount: 4 },
+        // Missing itemId 2 and 3 — that's okay
+      ]);
+
+      expect(result.sessionId).toBeGreaterThan(0);
+      expect(result.itemCount).toBe(1); // only 1 item entered
+      expect(result.itemsShort).toBe(0);
+    });
+
+    it('rejects submission when no counts are provided', async () => {
+      const mock = setupInventoryDb({});
+      const db = mock.asD1();
+
+      await expect(submitInventory(db, 10, [])).rejects.toThrow('At least one item count is required');
     });
 
     it('rejects submission when station does not exist', async () => {

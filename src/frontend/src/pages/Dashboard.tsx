@@ -80,7 +80,9 @@ export default function Dashboard() {
         if (!cancelled) setLoading(false);
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {
@@ -114,7 +116,12 @@ export default function Dashboard() {
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
           <div className="h-14 w-14 rounded-2xl bg-ems-red/10 border border-ems-red/20 flex items-center justify-center mb-4">
             <svg className="h-7 w-7 text-ems-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
             </svg>
           </div>
           <p className="text-zinc-400 font-medium">Failed to load dashboard</p>
@@ -140,9 +147,7 @@ export default function Dashboard() {
     )
     .sort((a, b) => a.delta - b.delta);
 
-  const worstStations = [...data.stations]
-    .filter((s) => s.itemsShort > 0)
-    .sort((a, b) => b.itemsShort - a.itemsShort);
+  const worstStations = [...data.stations].filter((s) => s.itemsShort > 0).sort((a, b) => b.itemsShort - a.itemsShort);
 
   const { pending, inProgress, filled } = data.orderPipeline;
   const totalOrders = pending + inProgress + filled;
@@ -156,7 +161,6 @@ export default function Dashboard() {
       </div>
 
       <div className="px-4 py-4 md:max-w-7xl md:mx-auto space-y-6">
-
         {/* ── Station Health Cards ─────────────────────────────── */}
         <section>
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">Station Health</h2>
@@ -174,12 +178,14 @@ export default function Dashboard() {
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <p className="text-sm font-semibold text-white">{station.stationName}</p>
-                      {nickname && (
-                        <p className="text-xs text-zinc-500 mt-0.5">{nickname}</p>
-                      )}
+                      {nickname && <p className="text-xs text-zinc-500 mt-0.5">{nickname}</p>}
                     </div>
-                    <div className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium border ${styles.bg}`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${styles.dot} ${fresh !== 'gray' ? 'pulse-dot' : ''}`} />
+                    <div
+                      className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium border ${styles.bg}`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${styles.dot} ${fresh !== 'gray' ? 'pulse-dot' : ''}`}
+                      />
                       <span className={styles.label}>
                         {fresh === 'gray'
                           ? 'Never'
@@ -214,16 +220,17 @@ export default function Dashboard() {
 
         {/* ── Middle row: Shortage Summary + Order Pipeline ──── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
           {/* Shortage Summary */}
           <section className="lg:col-span-2 rounded-2xl bg-surface-raised border border-border-subtle p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Shortage Summary</h2>
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold tabular-nums ${
-                totalShortages > 0
-                  ? 'bg-ems-red/15 text-ems-red border border-ems-red/20'
-                  : 'bg-ems-green/15 text-ems-green border border-ems-green/20'
-              }`}>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-bold tabular-nums ${
+                  totalShortages > 0
+                    ? 'bg-ems-red/15 text-ems-red border border-ems-red/20'
+                    : 'bg-ems-green/15 text-ems-green border border-ems-green/20'
+                }`}
+              >
                 {totalShortages} total
               </span>
             </div>
@@ -231,7 +238,12 @@ export default function Dashboard() {
             {totalShortages === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <svg className="h-8 w-8 text-ems-green mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <p className="text-zinc-400 text-sm">All stations fully stocked</p>
               </div>
@@ -242,7 +254,10 @@ export default function Dashboard() {
                   <p className="text-xs text-zinc-500 mb-2 font-medium">Most Critical Items</p>
                   <div className="space-y-1">
                     {allShortItems.slice(0, 5).map((item, i) => (
-                      <div key={`${item.stationId}-${item.itemName}-${i}`} className="flex items-center justify-between py-1.5">
+                      <div
+                        key={`${item.stationId}-${item.itemName}-${i}`}
+                        className="flex items-center justify-between py-1.5"
+                      >
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-sm text-white truncate">{item.itemName}</span>
                           <span className="shrink-0 text-xs text-zinc-600">{item.stationName}</span>
@@ -283,7 +298,12 @@ export default function Dashboard() {
             {totalOrders === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <svg className="h-8 w-8 text-zinc-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                  />
                 </svg>
                 <p className="text-zinc-500 text-sm">No orders</p>
               </div>
@@ -305,7 +325,6 @@ export default function Dashboard() {
 
         {/* ── Bottom row: Category Trends + Recent Activity ──── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
           {/* Category Trends */}
           <section className="rounded-2xl bg-surface-raised border border-border-subtle p-4">
             <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-4">Shortages by Category</h2>
@@ -313,7 +332,12 @@ export default function Dashboard() {
             {data.categoryShortages.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <svg className="h-8 w-8 text-ems-green mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <p className="text-zinc-400 text-sm">No shortages to display</p>
               </div>
@@ -349,7 +373,12 @@ export default function Dashboard() {
             {data.recentSessions.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <svg className="h-8 w-8 text-zinc-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <p className="text-zinc-500 text-sm">No submissions yet</p>
               </div>

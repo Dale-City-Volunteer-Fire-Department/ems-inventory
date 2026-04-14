@@ -1,11 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { StatefulD1Mock, createMockEnv, createMockKV } from '../helpers/mocks';
-import {
-  createSession,
-  destroySession,
-  parseSessionCookie,
-  buildClearSessionCookie,
-} from '../../src/worker/auth/session';
+import { createSession } from '../../src/worker/auth/session';
 import { handleAuthMe, handleAuthLogout } from '../../src/worker/auth/handlers';
 import type { UserRole } from '../../src/shared/types';
 
@@ -21,7 +16,7 @@ describe('Auth Handlers', () => {
 
       const res = await handleAuthMe(request, env);
       expect(res.status).toBe(401);
-      const body = await res.json() as { error: string };
+      const body = (await res.json()) as { error: string };
       expect(body.error).toContain('Authentication required');
     });
 
@@ -59,7 +54,7 @@ describe('Auth Handlers', () => {
 
       const res = await handleAuthMe(request, env);
       expect(res.status).toBe(200);
-      const body = await res.json() as { userId: number; name: string; role: string };
+      const body = (await res.json()) as { userId: number; name: string; role: string };
       expect(body.userId).toBe(1);
       expect(body.name).toBe('Test Crew');
       expect(body.role).toBe('crew');
@@ -88,7 +83,7 @@ describe('Auth Handlers', () => {
       });
 
       const res = await handleAuthMe(request, env);
-      const body = await res.json() as { photoUrl: string };
+      const body = (await res.json()) as { photoUrl: string };
       expect(body.photoUrl).toBe('https://graph.microsoft.com/photo.jpg');
     });
 
@@ -114,7 +109,7 @@ describe('Auth Handlers', () => {
       });
 
       const res = await handleAuthMe(request, env);
-      const body = await res.json() as { photoUrl: string | null };
+      const body = (await res.json()) as { photoUrl: string | null };
       expect(body.photoUrl).toBeNull();
     });
   });
@@ -128,7 +123,7 @@ describe('Auth Handlers', () => {
 
       const res = await handleAuthLogout(request, env);
       expect(res.status).toBe(200);
-      const body = await res.json() as { message: string };
+      const body = (await res.json()) as { message: string };
       expect(body.message).toBe('Logged out');
     });
 

@@ -19,8 +19,14 @@ function makeSession(role: UserRole): Session {
 }
 
 const VALID_CATEGORIES: Category[] = [
-  'Airway', 'Breathing', 'Circulation', 'Medications',
-  'Splinting', 'Burn', 'OB/Peds', 'Misc',
+  'Airway',
+  'Breathing',
+  'Circulation',
+  'Medications',
+  'Splinting',
+  'Burn',
+  'OB/Peds',
+  'Misc',
 ];
 
 // ── Tests ────────────────────────────────────────────────────────────
@@ -82,8 +88,10 @@ describe('Inline Route Handlers (index.ts)', () => {
     });
 
     it('converts is_active boolean to 1/0 for DB', () => {
-      expect(true ? 1 : 0).toBe(1);
-      expect(false ? 1 : 0).toBe(0);
+      const active = true;
+      const inactive = false;
+      expect(active ? 1 : 0).toBe(1);
+      expect(inactive ? 1 : 0).toBe(0);
     });
 
     it('updates item and returns updated record', async () => {
@@ -95,7 +103,9 @@ describe('Inline Route Handlers (index.ts)', () => {
 
       const db = mock.asD1();
       await db
-        .prepare(`UPDATE items SET name = ?, category = ?, sort_order = ?, is_active = ?, updated_at = datetime('now') WHERE id = ?`)
+        .prepare(
+          `UPDATE items SET name = ?, category = ?, sort_order = ?, is_active = ?, updated_at = datetime('now') WHERE id = ?`,
+        )
         .bind('Updated Item', 'Airway', 1, 1, 42)
         .run();
 
@@ -120,10 +130,13 @@ describe('Inline Route Handlers (index.ts)', () => {
     });
 
     it('validates target_count is a non-negative number', () => {
-      expect(typeof 5 === 'number' && 5 >= 0).toBe(true);
-      expect(typeof 0 === 'number' && 0 >= 0).toBe(true);
-      expect(typeof -1 === 'number' && -1 >= 0).toBe(false);
-      expect(typeof 'five' === 'number').toBe(false);
+      function isValidTarget(val: unknown): boolean {
+        return typeof val === 'number' && val >= 0;
+      }
+      expect(isValidTarget(5)).toBe(true);
+      expect(isValidTarget(0)).toBe(true);
+      expect(isValidTarget(-1)).toBe(false);
+      expect(isValidTarget('five')).toBe(false);
     });
 
     it('rejects undefined target_count', () => {
@@ -216,7 +229,9 @@ describe('Inline Route Handlers (index.ts)', () => {
 
   describe('GET /api/inventory/history — handleGetHistory', () => {
     it('parses query params from URL', () => {
-      const url = new URL('https://emsinventory.dcvfd.org/api/inventory/history?stationName=Station+10&category=Airway&status=short&limit=50&offset=10');
+      const url = new URL(
+        'https://emsinventory.dcvfd.org/api/inventory/history?stationName=Station+10&category=Airway&status=short&limit=50&offset=10',
+      );
       expect(url.searchParams.get('stationName')).toBe('Station 10');
       expect(url.searchParams.get('category')).toBe('Airway');
       expect(url.searchParams.get('status')).toBe('short');

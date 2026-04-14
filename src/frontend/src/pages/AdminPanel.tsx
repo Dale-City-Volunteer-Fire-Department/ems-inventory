@@ -120,9 +120,7 @@ export default function AdminPanel() {
           </div>
         ) : (
           <div className="space-y-2">
-            {users.length === 0 && (
-              <p className="text-zinc-500 text-sm text-center py-8">No users found.</p>
-            )}
+            {users.length === 0 && <p className="text-zinc-500 text-sm text-center py-8">No users found.</p>}
             {users.map((u) => {
               const isSelf = currentUser?.email === u.email;
               return (
@@ -134,7 +132,9 @@ export default function AdminPanel() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium text-white truncate">{u.name}</span>
-                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${roleBadgeClass(u.role)}`}>
+                        <span
+                          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${roleBadgeClass(u.role)}`}
+                        >
                           {u.role}
                         </span>
                         {isSelf && (

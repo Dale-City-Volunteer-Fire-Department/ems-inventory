@@ -3,11 +3,7 @@ import { verifyCsrfOrigin } from '../../src/worker/index';
 
 // ── Helper: build a Request with specific method, path, and origin ──
 
-function makeRequest(
-  method: string,
-  path: string,
-  origin?: string,
-): Request {
+function makeRequest(method: string, path: string, origin?: string): Request {
   const headers: Record<string, string> = {};
   if (origin) {
     headers['Origin'] = origin;
@@ -76,7 +72,7 @@ describe('CSRF Origin Verification', () => {
     it('rejection body contains descriptive error message', async () => {
       const result = verifyCsrfOrigin(makeRequest('POST', '/api/auth/pin'));
       expect(result).not.toBeNull();
-      const body = await result!.json() as { error: string };
+      const body = (await result!.json()) as { error: string };
       expect(body.error).toContain('Origin');
     });
   });
@@ -89,25 +85,19 @@ describe('CSRF Origin Verification', () => {
     });
 
     it('POST with attacker subdomain is rejected', () => {
-      const result = verifyCsrfOrigin(
-        makeRequest('POST', '/api/auth/pin', 'https://emsinventory.dcvfd.org.evil.com'),
-      );
+      const result = verifyCsrfOrigin(makeRequest('POST', '/api/auth/pin', 'https://emsinventory.dcvfd.org.evil.com'));
       expect(result).not.toBeNull();
       expect(result!.status).toBe(403);
     });
 
     it('POST with http (not https) production URL is rejected', () => {
-      const result = verifyCsrfOrigin(
-        makeRequest('POST', '/api/inventory/submit', 'http://emsinventory.dcvfd.org'),
-      );
+      const result = verifyCsrfOrigin(makeRequest('POST', '/api/inventory/submit', 'http://emsinventory.dcvfd.org'));
       expect(result).not.toBeNull();
       expect(result!.status).toBe(403);
     });
 
     it('POST with Origin containing extra path is rejected', () => {
-      const result = verifyCsrfOrigin(
-        makeRequest('POST', '/api/auth/pin', 'https://emsinventory.dcvfd.org/some/path'),
-      );
+      const result = verifyCsrfOrigin(makeRequest('POST', '/api/auth/pin', 'https://emsinventory.dcvfd.org/some/path'));
       expect(result).not.toBeNull();
       expect(result!.status).toBe(403);
     });
@@ -155,9 +145,7 @@ describe('CSRF Origin Verification', () => {
     });
 
     it('exempt paths pass even with invalid Origin', () => {
-      const result = verifyCsrfOrigin(
-        makeRequest('POST', '/api/auth/entra/callback', 'https://evil.com'),
-      );
+      const result = verifyCsrfOrigin(makeRequest('POST', '/api/auth/entra/callback', 'https://evil.com'));
       expect(result).toBeNull();
     });
   });

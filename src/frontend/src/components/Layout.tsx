@@ -32,9 +32,7 @@ export default function Layout({ children, role, userName }: LayoutProps) {
       <Header onProfileClick={() => setProfileOpen(true)} />
 
       {/* Main content — offset on desktop for sidebar */}
-      <main className={collapsed ? 'md:ml-16' : 'md:ml-64'}>
-        {children}
-      </main>
+      <main className={collapsed ? 'md:ml-16' : 'md:ml-64'}>{children}</main>
 
       <NavBar role={role} />
       <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />

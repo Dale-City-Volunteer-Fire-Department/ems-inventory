@@ -40,7 +40,7 @@ The core UX requirement is single-tap numeric inputs on mobile devices. Every UI
 | Sessions  | Cloudflare KV                             |
 | Frontend  | React 19 + Vite 6 + Tailwind CSS v4      |
 | Language  | TypeScript (strict mode throughout)       |
-| Auth      | Microsoft Entra ID SSO + Station PIN         |
+| Auth      | Microsoft Entra ID SSO + Station PIN      |
 | Data sync | D1 to Azure SQL (for PowerBI reporting)   |
 
 ---
@@ -200,43 +200,43 @@ The Worker serves both the JSON API (`/api/*` routes) and the built SPA (static 
 
 ### Authenticated (any role)
 
-| Method | Path                                        | Description                        |
-| ------ | ------------------------------------------- | ---------------------------------- |
-| POST   | `/api/inventory/submit`                     | Submit inventory counts            |
-| GET    | `/api/inventory/history`                    | Query inventory history            |
-| GET    | `/api/inventory/sessions`                   | List completed inventory sessions  |
-| GET    | `/api/inventory/current/:stationId/summary` | Dashboard summary for a station    |
+| Method | Path                                        | Description                       |
+| ------ | ------------------------------------------- | --------------------------------- |
+| POST   | `/api/inventory/submit`                     | Submit inventory counts           |
+| GET    | `/api/inventory/history`                    | Query inventory history           |
+| GET    | `/api/inventory/sessions`                   | List completed inventory sessions |
+| GET    | `/api/inventory/current/:stationId/summary` | Dashboard summary for a station   |
 
 ### Authenticated (logistics or admin)
 
-| Method | Path                     | Description                    |
-| ------ | ------------------------ | ------------------------------ |
-| PUT    | `/api/items`             | Create or update an item       |
-| POST   | `/api/items`             | Create or update an item       |
-| PUT    | `/api/items/:id`         | Update a single item by ID     |
-| PUT    | `/api/stock-targets`     | Update PAR levels              |
-| PUT    | `/api/stock-targets/:id` | Update a single PAR level      |
-| GET    | `/api/orders`            | List resupply orders           |
-| PUT    | `/api/orders`            | Update order status            |
-| GET    | `/api/dashboard/stats`   | Comprehensive dashboard stats  |
+| Method | Path                     | Description                   |
+| ------ | ------------------------ | ----------------------------- |
+| PUT    | `/api/items`             | Create or update an item      |
+| POST   | `/api/items`             | Create or update an item      |
+| PUT    | `/api/items/:id`         | Update a single item by ID    |
+| PUT    | `/api/stock-targets`     | Update PAR levels             |
+| PUT    | `/api/stock-targets/:id` | Update a single PAR level     |
+| GET    | `/api/orders`            | List resupply orders          |
+| PUT    | `/api/orders`            | Update order status           |
+| GET    | `/api/dashboard/stats`   | Comprehensive dashboard stats |
 
 ### Authenticated (admin only)
 
-| Method | Path                    | Description                    |
-| ------ | ----------------------- | ------------------------------ |
-| GET    | `/api/users`            | List all users                 |
-| PUT    | `/api/users/:id/role`   | Update a user's role           |
-| PUT    | `/api/users/:id/active` | Activate or deactivate a user  |
+| Method | Path                    | Description                   |
+| ------ | ----------------------- | ----------------------------- |
+| GET    | `/api/users`            | List all users                |
+| PUT    | `/api/users/:id/role`   | Update a user's role          |
+| PUT    | `/api/users/:id/active` | Activate or deactivate a user |
 
 ---
 
 ## Roles
 
-| Role       | Page Access                                                                    |
-| ---------- | ------------------------------------------------------------------------------ |
-| `crew`     | New Inventory only (station select, inventory form, submit)                    |
-| `logistics`| Everything in crew + Dashboard, Inventories, Orders, PAR Management            |
-| `admin`    | Everything in logistics + Users management (role assignment, account control)   |
+| Role        | Page Access                                                                   |
+| ----------- | ----------------------------------------------------------------------------- |
+| `crew`      | New Inventory only (station select, inventory form, submit)                   |
+| `logistics` | Everything in crew + Dashboard, Inventories, Orders, PAR Management           |
+| `admin`     | Everything in logistics + Users management (role assignment, account control) |
 
 Role enforcement is applied at two layers: the Worker middleware (`requireRole`) gates API endpoints, and the React router conditionally renders navigation and routes based on the user's role.
 
@@ -244,12 +244,12 @@ Role enforcement is applied at two layers: the Worker middleware (`requireRole`)
 
 ## Stations
 
-| ID | Code | Name       | Nickname        | Notes             |
-| -- | ---- | ---------- | --------------- | ----------------- |
-| 10 | FS10 | Station 10 | The Dime        |                   |
-| 13 | FS13 | Station 13 | Midtown         | Central warehouse |
-| 18 | FS18 | Station 18 | --              |                   |
-| 20 | FS20 | Station 20 | Parkway Express |                   |
+| ID  | Code | Name       | Nickname        | Notes             |
+| --- | ---- | ---------- | --------------- | ----------------- |
+| 10  | FS10 | Station 10 | The Dime        |                   |
+| 13  | FS13 | Station 13 | Midtown         | Central warehouse |
+| 18  | FS18 | Station 18 | --              |                   |
+| 20  | FS20 | Station 20 | Parkway Express |                   |
 
 Station 13 serves as the central supply warehouse where resupply orders are fulfilled.
 
@@ -406,13 +406,13 @@ Current migrations:
 
 The `scripts/` directory contains migration tooling for importing historical data from the legacy systems:
 
-| Script                        | Purpose                                        |
-| ----------------------------- | ---------------------------------------------- |
-| `migrate-airtable-items.ts`   | Import item catalog from Airtable              |
-| `migrate-airtable-targets.ts` | Import PAR levels from Airtable                |
-| `migrate-airtable-history.ts` | Import historical inventory records            |
-| `migrate-podio-history.ts`    | Import historical records from Podio           |
-| `migrate-all.sh`              | Run all migrations in sequence                 |
+| Script                        | Purpose                              |
+| ----------------------------- | ------------------------------------ |
+| `migrate-airtable-items.ts`   | Import item catalog from Airtable    |
+| `migrate-airtable-targets.ts` | Import PAR levels from Airtable      |
+| `migrate-airtable-history.ts` | Import historical inventory records  |
+| `migrate-podio-history.ts`    | Import historical records from Podio |
+| `migrate-all.sh`              | Run all migrations in sequence       |
 
 Run the full migration:
 
@@ -427,12 +427,12 @@ bash migrate-all.sh
 
 The `sync/` directory contains tooling for replicating D1 data to Azure SQL, enabling PowerBI reporting for county stakeholders.
 
-| File               | Purpose                                |
-| ------------------ | -------------------------------------- |
-| `sync-to-azure.ts` | D1 to Azure SQL replication script     |
-| `schema.sql`       | Azure SQL target schema                |
-| `setup.sh`         | Initial Azure SQL setup                |
-| `run-sync.sh`      | Execute a sync run                     |
+| File               | Purpose                            |
+| ------------------ | ---------------------------------- |
+| `sync-to-azure.ts` | D1 to Azure SQL replication script |
+| `schema.sql`       | Azure SQL target schema            |
+| `setup.sh`         | Initial Azure SQL setup            |
+| `run-sync.sh`      | Execute a sync run                 |
 
 ---
 

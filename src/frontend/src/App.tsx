@@ -62,21 +62,11 @@ function AppShell() {
             )
           }
         />
-        {userRank >= ROLE_RANK.logistics && (
-          <Route path="/dashboard" element={<Dashboard />} />
-        )}
-        {userRank >= ROLE_RANK.logistics && (
-          <Route path="/inventories" element={<Inventories />} />
-        )}
-        {userRank >= ROLE_RANK.logistics && (
-          <Route path="/orders" element={<Orders />} />
-        )}
-        {userRank >= ROLE_RANK.logistics && (
-          <Route path="/par" element={<ParManagement />} />
-        )}
-        {userRank >= ROLE_RANK.admin && (
-          <Route path="/admin" element={<AdminPanel />} />
-        )}
+        {userRank >= ROLE_RANK.logistics && <Route path="/dashboard" element={<Dashboard />} />}
+        {userRank >= ROLE_RANK.logistics && <Route path="/inventories" element={<Inventories />} />}
+        {userRank >= ROLE_RANK.logistics && <Route path="/orders" element={<Orders />} />}
+        {userRank >= ROLE_RANK.logistics && <Route path="/par" element={<ParManagement />} />}
+        {userRank >= ROLE_RANK.admin && <Route path="/admin" element={<AdminPanel />} />}
         <Route path="/login" element={<Navigate to="/inventory" replace />} />
         <Route path="*" element={<Navigate to="/inventory" replace />} />
       </Routes>

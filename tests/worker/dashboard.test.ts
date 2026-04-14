@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { StatefulD1Mock } from '../helpers/mocks';
-import { ok, badRequest, notFound, forbidden, serverError } from '../../src/worker/lib/response';
+import { ok } from '../../src/worker/lib/response';
 import { requireRole } from '../../src/worker/middleware/rbac';
 import type { UserRole } from '../../src/shared/types';
 import type { Session } from '../../src/worker/auth/session';
@@ -59,14 +59,10 @@ describe('Dashboard Stats Endpoint', () => {
             lastSubmission: '2026-04-06T12:00:00Z',
             itemCount: 20,
             itemsShort: 3,
-            shortages: [
-              { itemName: 'NPA Kit', category: 'Airway', target: 4, actual: 1, delta: -3 },
-            ],
+            shortages: [{ itemName: 'NPA Kit', category: 'Airway', target: 4, actual: 1, delta: -3 }],
           },
         ],
-        categoryShortages: [
-          { category: 'Airway', count: 2 },
-        ],
+        categoryShortages: [{ category: 'Airway', count: 2 }],
         orderPipeline: {
           pending: 3,
           inProgress: 1,
@@ -86,7 +82,7 @@ describe('Dashboard Stats Endpoint', () => {
 
       const res = ok(dashboardData);
       expect(res.status).toBe(200);
-      const body = await res.json() as typeof dashboardData;
+      const body = (await res.json()) as typeof dashboardData;
       expect(body.stations).toBeDefined();
       expect(Array.isArray(body.stations)).toBe(true);
       expect(body.categoryShortages).toBeDefined();
@@ -106,7 +102,7 @@ describe('Dashboard Stats Endpoint', () => {
         shortages: [],
       };
       const res = ok({ stations: [station] });
-      const body = await res.json() as { stations: typeof station[] };
+      const body = (await res.json()) as { stations: (typeof station)[] };
       expect(body.stations[0].shortages).toEqual([]);
       expect(body.stations[0].lastSubmission).toBeNull();
     });
@@ -115,10 +111,7 @@ describe('Dashboard Stats Endpoint', () => {
   describe('database queries', () => {
     it('fetches latest sessions per station', async () => {
       const mock = new StatefulD1Mock();
-      let queryCalled = false;
-
       mock.onQuery('SELECT MAX(id) FROM inventory_sessions GROUP BY station_id', () => {
-        queryCalled = true;
         return [
           {
             id: 5,

@@ -137,21 +137,17 @@ export async function submitInventory(
     countMap.set(c.itemId, c.actualCount);
   }
 
-  // Validate: all active items must have counts
-  const missingItems = template.filter((t) => !countMap.has(t.item_id));
-  if (missingItems.length > 0) {
-    const names = missingItems.slice(0, 5).map((m) => m.item_name);
-    throw new Error(
-      `Missing counts for ${missingItems.length} items: ${names.join(', ')}${missingItems.length > 5 ? '...' : ''}`,
-    );
+  // Only process items that have counts — partial submissions are allowed
+  const enteredItems = template.filter((t) => countMap.has(t.item_id));
+  if (enteredItems.length === 0) {
+    throw new Error('At least one item count is required');
   }
 
-  // Create session
+  // Calculate shortages from entered items
   let itemsShort = 0;
   const shortItems: { item_name: string; category: string; actual: number; target: number; need: number }[] = [];
 
-  // Calculate shortages first for the session record
-  for (const t of template) {
+  for (const t of enteredItems) {
     const actual = countMap.get(t.item_id)!;
     const delta = actual - t.target_count;
     if (delta < 0) {
@@ -168,7 +164,7 @@ export async function submitInventory(
 
   const sessionResult = await db
     .prepare('INSERT INTO inventory_sessions (station_id, submitted_by, item_count, items_short) VALUES (?, ?, ?, ?)')
-    .bind(stationId, submittedBy ?? null, template.length, itemsShort)
+    .bind(stationId, submittedBy ?? null, enteredItems.length, itemsShort)
     .run();
 
   const sessionId = sessionResult.meta.last_row_id as number;
@@ -180,7 +176,7 @@ export async function submitInventory(
   );
 
   const batch: D1PreparedStatement[] = [];
-  for (const t of template) {
+  for (const t of enteredItems) {
     const actual = countMap.get(t.item_id)!;
     const delta = actual - t.target_count;
     let status: string;
@@ -205,7 +201,7 @@ export async function submitInventory(
     orderId = orderResult.meta.last_row_id as number;
   }
 
-  return { sessionId, itemCount: template.length, itemsShort, orderId };
+  return { sessionId, itemCount: enteredItems.length, itemsShort, orderId };
 }
 
 export function formatPickList(
@@ -280,7 +276,10 @@ export async function getSessions(db: D1Database, filters?: SessionFilters): Pro
                LIMIT ? OFFSET ?`;
   binds.push(limit, offset);
 
-  const result = await db.prepare(sql).bind(...binds).all<InventorySession>();
+  const result = await db
+    .prepare(sql)
+    .bind(...binds)
+    .all<InventorySession>();
   return result.results;
 }
 
