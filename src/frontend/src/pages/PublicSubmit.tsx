@@ -101,7 +101,9 @@ export default function PublicSubmit() {
       setError(null);
       setLoading(true);
       try {
-        const res = await fetch(`/api/inventory/current/${s.id}`);
+        const res = await fetch(`/api/public/inventory/${s.id}`, {
+          headers: token ? { 'X-Public-Token': token } : {},
+        });
         if (!res.ok) throw new Error('Failed to load inventory items');
         const data = (await res.json()) as InventoryTemplateItem[];
         setItems(data);
@@ -117,7 +119,7 @@ export default function PublicSubmit() {
         setLoading(false);
       }
     },
-    [],
+    [token],
   );
 
   // ── Inventory Step ────────────────────────────────────────────

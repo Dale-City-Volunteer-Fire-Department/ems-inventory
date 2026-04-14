@@ -13,7 +13,7 @@ ALTER TABLE inventory_sessions ADD COLUMN submitter_name TEXT;
 -- 4. inventory_attachments — File attachments stored in R2, linked to sessions
 CREATE TABLE inventory_attachments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  session_id TEXT NOT NULL,
+  session_id INTEGER NOT NULL,
   filename TEXT NOT NULL,
   r2_key TEXT NOT NULL,
   content_type TEXT NOT NULL,

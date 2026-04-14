@@ -12,7 +12,7 @@ import { handleEntraLogin, handleEntraCallback } from './auth/entra';
 import { handlePinAuth } from './auth/pin';
 import { handleAuthMe, handleAuthLogout } from './auth/handlers';
 import { requireAuth } from './middleware/auth';
-import { handlePublicVerifyPin, handlePublicUpload, handlePublicInventorySubmit } from './public';
+import { handlePublicVerifyPin, handlePublicUpload, handlePublicInventorySubmit, handlePublicGetInventory } from './public';
 import type { Session } from './middleware/auth';
 import { requireRole } from './middleware/rbac';
 import type { UserRole } from '../shared/types';
@@ -136,6 +136,10 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
   }
   if (path === '/api/public/inventory/submit' && method === 'POST') {
     return handlePublicInventorySubmit(request, env);
+  }
+  // GET /api/public/inventory/:stationId — token-gated inventory template for public form
+  if (/^\/api\/public\/inventory\/\d+$/.test(path) && method === 'GET') {
+    return handlePublicGetInventory(request, env);
   }
 
   // ── Dashboard stats (logistics+) ──────────────────────────────────

@@ -52,8 +52,11 @@ function constantTimeEqual(a: string, b: string): boolean {
  */
 export async function handlePinAuth(request: Request, env: Env): Promise<Response> {
   try {
-    // MEDIUM-4: Rate limit PIN attempts by IP
-    const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+    // H-4: Rate limit PIN attempts by IP — reject unknown/missing IP
+    const ip = request.headers.get('CF-Connecting-IP');
+    if (!ip || ip === 'unknown') {
+      return badRequest('Unable to determine client IP');
+    }
     const allowed = await checkPinRateLimit(env.SESSIONS, ip);
     if (!allowed) {
       return tooManyRequests('Too many PIN attempts. Please try again later.');

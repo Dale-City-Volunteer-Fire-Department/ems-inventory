@@ -8,7 +8,7 @@ Real-time EMS supply inventory management for Dale City Volunteer Fire Departmen
 
 EMS Inventory is a mobile-first web application for weekly EMS closet inventory counting at four DCVFD fire stations. Crew members use their phones to record actual supply quantities against PAR (Periodic Automatic Replenishment) targets. The system automatically generates resupply pick lists for logistics staff at the Station 13 warehouse.
 
-This application replaces a legacy Airtable + Softr + Podio workflow that had outgrown its usefulness. The new system is faster, cheaper to operate, and designed specifically for the mixed-authentication environment at DCVFD, where volunteers authenticate through Microsoft Entra ID SSO and Prince William County paid staff use magic links or station PINs.
+This application replaces a legacy Airtable + Softr + Podio workflow that had outgrown its usefulness. The new system is faster, cheaper to operate, and designed specifically for the mixed-authentication environment at DCVFD, where volunteers authenticate through Microsoft Entra ID SSO and crew members use station PINs.
 
 The core UX requirement is single-tap numeric inputs on mobile devices. Every UI decision prioritizes phone-first usability during closet counts.
 
@@ -21,7 +21,8 @@ The core UX requirement is single-tap numeric inputs on mobile devices. Every UI
 
 | Page | Description |
 |------|-------------|
-| Login | Glass-morphism card with DCVFD badge, Entra SSO and Magic Link buttons |
+| Login | Glass-morphism card with DCVFD badge, Entra SSO and PIN buttons |
+| Public Submit | PIN-gated public form at `/submit` for crew without accounts |
 | Inventory Form | Mobile-optimized category groups with single-tap numeric inputs |
 | Dashboard | Station health cards with freshness indicators, category shortage bars, order pipeline |
 | PAR Management | Two-column category grid with inline PAR editing across 4 stations |
@@ -39,7 +40,7 @@ The core UX requirement is single-tap numeric inputs on mobile devices. Every UI
 | Sessions  | Cloudflare KV                             |
 | Frontend  | React 19 + Vite 6 + Tailwind CSS v4      |
 | Language  | TypeScript (strict mode throughout)       |
-| Auth      | Microsoft Entra ID SSO + Magic Link (Resend) |
+| Auth      | Microsoft Entra ID SSO + Station PIN         |
 | Data sync | D1 to Azure SQL (for PowerBI reporting)   |
 
 ---
@@ -48,11 +49,14 @@ The core UX requirement is single-tap numeric inputs on mobile devices. Every UI
 
 ### Login (`/login`)
 
-Entry point for all users. Two authentication paths:
+Entry point for authenticated users. Two authentication paths:
 
 - **Sign in with DCVFD Account** -- Initiates Microsoft Entra ID OAuth2 authorization code flow for DCVFD volunteers with Active Directory accounts.
-- **Sign in with Email** -- Sends a time-limited magic link via Resend to Prince William County paid staff who lack DCVFD AD accounts.
 - **Station PIN** -- A shared numeric PIN for quick crew-level access during closet counts.
+
+### Public Submit (`/submit`)
+
+A PIN-gated public inventory form accessible without a user account. Crew members enter the station PIN to receive a short-lived session token, then select their station and submit counts. Supports optional notes and photo attachments.
 
 ### New Inventory (`/inventory`)
 
@@ -132,7 +136,6 @@ src/
 │   ├── index.ts             # Router and request handler
 │   ├── auth/                # Authentication providers
 │   │   ├── entra.ts         # Entra ID SSO (OAuth2)
-│   │   ├── magic-link.ts    # Magic link (Resend)
 │   │   ├── pin.ts           # Station PIN
 │   │   ├── session.ts       # Session management
 │   │   ├── handlers.ts      # /auth/me, /auth/logout
@@ -172,7 +175,7 @@ The Worker serves both the JSON API (`/api/*` routes) and the built SPA (static 
 | GET    | `/api/stations`                     | List all active stations            |
 | GET    | `/api/items`                        | List all active items               |
 | GET    | `/api/stock-targets`                | List all PAR levels                 |
-| GET    | `/api/inventory/current/:stationId` | Get inventory template for a station|
+| GET    | `/api/inventory/current/:stationId` | Get inventory template (authenticated app) |
 
 ### Auth Routes (unauthenticated)
 
@@ -180,11 +183,18 @@ The Worker serves both the JSON API (`/api/*` routes) and the built SPA (static 
 | ------ | -------------------------------- | ------------------------------- |
 | GET    | `/api/auth/entra/login`          | Initiate Entra ID SSO flow      |
 | GET    | `/api/auth/entra/callback`       | Entra ID OAuth2 callback        |
-| POST   | `/api/auth/magic-link/request`   | Request a magic link email      |
-| GET    | `/api/auth/magic-link/verify`    | Verify magic link token         |
 | POST   | `/api/auth/pin`                  | Authenticate with station PIN   |
 | GET    | `/api/auth/me`                   | Get current session info        |
 | POST   | `/api/auth/logout`               | Destroy current session         |
+
+### Public Inventory Form (PIN-gated, no account required)
+
+| Method | Path                                  | Description                                        |
+| ------ | ------------------------------------- | -------------------------------------------------- |
+| POST   | `/api/public/verify-pin`              | Verify station PIN, receive short-lived token      |
+| GET    | `/api/public/inventory/:stationId`    | Get inventory template (requires X-Public-Token)   |
+| POST   | `/api/public/upload`                  | Upload photo attachment (requires X-Public-Token)  |
+| POST   | `/api/public/inventory/submit`        | Submit counts (requires X-Public-Token)            |
 
 ### Authenticated (any role)
 
@@ -317,8 +327,6 @@ Set via `wrangler secret put <NAME>` or the Cloudflare Dashboard. Never commit t
 | `AZURE_AD_TENANT_ID`     | Entra ID directory (tenant) ID           |
 | `AZURE_AD_CLIENT_SECRET` | Entra ID client secret                   |
 | `STATION_PIN`            | Shared station PIN for quick crew auth   |
-| `MAGIC_LINK_SECRET`      | HMAC signing key for magic link tokens   |
-| `RESEND_API_KEY`         | Resend API key for magic link emails     |
 
 ### Environment Variables
 
