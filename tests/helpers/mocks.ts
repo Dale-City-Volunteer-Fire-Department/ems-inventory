@@ -341,6 +341,7 @@ export function createMockEnv(overrides?: Partial<Env>): Env {
     AZURE_AD_CLIENT_SECRET: 'test-client-secret',
     STATION_PIN: '5214',
     RESEND_API_KEY: 'test-resend-key',
+    MAGIC_LINK_SECRET: 'test-magic-link-secret-32-bytes!!',
     ...overrides,
   };
 }

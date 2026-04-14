@@ -1,4 +1,4 @@
-// Public inventory submission handlers — PIN-gated, no session auth required
+// Public inventory submission handlers — PIN-gated or magic-link-gated, no session auth required
 
 import type { Env } from './types';
 import { checkPinRateLimit } from './auth/pin';
@@ -9,15 +9,17 @@ import { ok, badRequest, unauthorized, serverError, tooManyRequests } from './li
 
 const PUBLIC_TOKEN_TTL = 2 * 60 * 60; // 2 hours in seconds
 
-// Per-token submission and upload caps
+// Per-token submission and upload caps (applied to ALL session tokens regardless of auth origin)
 const MAX_SUBMISSIONS_PER_TOKEN = 10;
 const MAX_UPLOADS_PER_TOKEN = 50;
 const MAX_ATTACHMENTS_PER_SUBMIT = 10;
 
+// HIGH-2: Unified token data — email field present for magic-link-derived sessions, null for PIN
 interface PublicTokenData {
   created: number;
   submissions: number;
   uploads: number;
+  email?: string | null;
 }
 
 function publicTokenKey(token: string): string {
@@ -30,25 +32,39 @@ async function generatePublicToken(kv: KVNamespace): Promise<string> {
   const token = Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
-  const data: PublicTokenData = { created: Date.now(), submissions: 0, uploads: 0 };
+  const data: PublicTokenData = { created: Date.now(), submissions: 0, uploads: 0, email: null };
   await kv.put(publicTokenKey(token), JSON.stringify(data), { expirationTtl: PUBLIC_TOKEN_TTL });
   return token;
 }
 
 /**
- * Validate a public token and return its data, or null if invalid.
+ * Validate a public session token (issued by PIN flow or magic-link verify).
+ * All tokens are stored under the public: prefix with counters and an optional email field.
+ * Returns { tokenData, submitterEmail } or null if invalid.
  */
-async function validatePublicToken(kv: KVNamespace, token: string | null): Promise<PublicTokenData | null> {
+async function validateAnyPublicToken(
+  kv: KVNamespace,
+  token: string | null,
+): Promise<{ tokenData: PublicTokenData; submitterEmail: string | null } | null> {
   if (!token) return null;
+
   const val = await kv.get(publicTokenKey(token), 'text');
   if (val === null) return null;
+
+  let tokenData: PublicTokenData;
   try {
-    return JSON.parse(val) as PublicTokenData;
+    tokenData = JSON.parse(val) as PublicTokenData;
   } catch {
-    // Legacy value '1' — treat as valid with zero counters
-    if (val === '1') return { created: 0, submissions: 0, uploads: 0 };
-    return null;
+    // Legacy value '1' — treat as valid with zero counters and no email
+    if (val === '1') {
+      tokenData = { created: 0, submissions: 0, uploads: 0, email: null };
+    } else {
+      return null;
+    }
   }
+
+  const submitterEmail = tokenData.email ?? null;
+  return { tokenData, submitterEmail };
 }
 
 async function saveTokenData(kv: KVNamespace, token: string, data: PublicTokenData): Promise<void> {
@@ -171,12 +187,13 @@ export async function handlePublicVerifyPin(request: Request, env: Env): Promise
 export async function handlePublicUpload(request: Request, env: Env): Promise<Response> {
   try {
     const token = request.headers.get('X-Public-Token');
-    const tokenData = await validatePublicToken(env.SESSIONS, token);
-    if (!tokenData) {
+    const validated = await validateAnyPublicToken(env.SESSIONS, token);
+    if (!validated) {
       return unauthorized('Invalid or expired public token');
     }
+    const { tokenData, submitterEmail } = validated;
 
-    // H-2: Check upload cap
+    // HIGH-2: Check upload cap — applies to all session tokens regardless of auth origin
     if (tokenData.uploads >= MAX_UPLOADS_PER_TOKEN) {
       return tooManyRequests(`Upload limit reached (${MAX_UPLOADS_PER_TOKEN} uploads per session)`);
     }
@@ -214,7 +231,7 @@ export async function handlePublicUpload(request: Request, env: Env): Promise<Re
       customMetadata: { originalFilename: file.name },
     });
 
-    // H-2: Increment upload counter
+    // HIGH-2: Increment upload counter for all session tokens
     tokenData.uploads += 1;
     await saveTokenData(env.SESSIONS, token!, tokenData);
 
@@ -238,8 +255,8 @@ export async function handlePublicUpload(request: Request, env: Env): Promise<Re
 export async function handlePublicGetInventory(request: Request, env: Env): Promise<Response> {
   try {
     const token = request.headers.get('X-Public-Token');
-    const tokenData = await validatePublicToken(env.SESSIONS, token);
-    if (!tokenData) {
+    const validated = await validateAnyPublicToken(env.SESSIONS, token);
+    if (!validated) {
       return unauthorized('Invalid or expired public token');
     }
 
@@ -287,12 +304,13 @@ export async function handlePublicGetInventory(request: Request, env: Env): Prom
 export async function handlePublicInventorySubmit(request: Request, env: Env): Promise<Response> {
   try {
     const token = request.headers.get('X-Public-Token');
-    const tokenData = await validatePublicToken(env.SESSIONS, token);
-    if (!tokenData) {
+    const validated = await validateAnyPublicToken(env.SESSIONS, token);
+    if (!validated) {
       return unauthorized('Invalid or expired public token');
     }
+    const { tokenData, submitterEmail } = validated;
 
-    // H-2: Check submission cap
+    // HIGH-2: Check submission cap — applies to all session tokens regardless of auth origin
     if (tokenData.submissions >= MAX_SUBMISSIONS_PER_TOKEN) {
       return tooManyRequests(`Submission limit reached (${MAX_SUBMISSIONS_PER_TOKEN} submissions per session)`);
     }
@@ -412,9 +430,10 @@ export async function handlePublicInventorySubmit(request: Request, env: Env): P
     }
 
     // Create inventory session with public flag
+    // submitter_email comes from magic link auth; null for PIN-gated submissions
     const sessionResult = await env.DB
       .prepare(
-        'INSERT INTO inventory_sessions (station_id, submitted_by, item_count, items_short, notes, is_public, submitter_name) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO inventory_sessions (station_id, submitted_by, item_count, items_short, notes, is_public, submitter_name, submitter_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       )
       .bind(
         stationId,
@@ -424,6 +443,7 @@ export async function handlePublicInventorySubmit(request: Request, env: Env): P
         body.notes ?? null,
         1, // is_public
         body.submitter_name ?? null,
+        submitterEmail,
       )
       .run();
 
@@ -477,7 +497,7 @@ export async function handlePublicInventorySubmit(request: Request, env: Env): P
       await env.DB.batch(attachBatch);
     }
 
-    // H-2: Increment submission counter
+    // HIGH-2: Increment submission counter for all session tokens
     tokenData.submissions += 1;
     await saveTokenData(env.SESSIONS, token!, tokenData);
 

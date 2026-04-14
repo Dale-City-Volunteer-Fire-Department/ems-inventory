@@ -38,13 +38,14 @@ const STATION_NICKNAMES: Record<number, string> = {
 
 // ── Steps ─────────────────────────────────────────────────────────
 
-type Step = 'pin' | 'station' | 'inventory' | 'notes' | 'success';
+type Step = 'email' | 'email-sent' | 'verifying' | 'pin' | 'station' | 'inventory' | 'notes' | 'success';
 
 // ── Component ─────────────────────────────────────────────────────
 
 export default function PublicSubmit() {
-  const [step, setStep] = useState<Step>('pin');
+  const [step, setStep] = useState<Step>('email');
   const [token, setToken] = useState<string | null>(null);
+  const [submitterEmail, setSubmitterEmail] = useState<string | null>(null);
   const [station, setStation] = useState<Station | null>(null);
   const [submitterName, setSubmitterName] = useState('');
   const [items, setItems] = useState<InventoryTemplateItem[]>([]);
@@ -58,7 +59,81 @@ export default function PublicSubmit() {
   const [error, setError] = useState<string | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
 
-  // ── PIN Step ──────────────────────────────────────────────────
+  // ── Magic Link: Email entry ───────────────────────────────────
+
+  const [emailInput, setEmailInput] = useState('');
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (step === 'email' && emailInputRef.current) {
+      emailInputRef.current.focus();
+    }
+  }, [step]);
+
+  // ── On mount: check for ?token= in URL ───────────────────────
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    if (urlToken) {
+      setStep('verifying');
+      verifyMagicToken(urlToken);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const verifyMagicToken = useCallback(async (tokenParam: string) => {
+    try {
+      const res = await fetch(`/api/public/magic-link/verify?token=${encodeURIComponent(tokenParam)}`);
+      if (!res.ok) {
+        setError('Verification failed. Please request a new sign-in link.');
+        setStep('email');
+        return;
+      }
+      const data = (await res.json()) as { success: boolean; email?: string; token?: string; error?: string };
+      if (!data.success) {
+        // MEDIUM-3: Never surface server error strings to users
+        setError('This sign-in link is invalid or has expired. Please request a new one.');
+        setStep('email');
+        return;
+      }
+      setToken(data.token ?? tokenParam);
+      setSubmitterEmail(data.email ?? null);
+      // Remove token from URL without triggering a navigation
+      window.history.replaceState({}, '', '/submit');
+      setStep('station');
+    } catch {
+      setError('Verification failed. Please request a new sign-in link.');
+      setStep('email');
+    }
+  }, []);
+
+  const handleEmailSubmit = useCallback(async () => {
+    const email = emailInput.trim().toLowerCase();
+    if (!email) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/public/magic-link/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        // MEDIUM-3: Never surface server error strings to users
+        setError('Unable to send sign-in link. Please try again.');
+        return;
+      }
+      setStep('email-sent');
+    } catch {
+      // MEDIUM-3: Never surface server error strings to users
+      setError('Unable to send sign-in link. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [emailInput]);
+
+  // ── PIN Step (legacy fallback) ─────────────────────────────────
 
   const [pin, setPin] = useState('');
   const pinInputRef = useRef<HTMLInputElement>(null);
@@ -85,6 +160,7 @@ export default function PublicSubmit() {
       }
       const data = (await res.json()) as { success: boolean; token: string };
       setToken(data.token);
+      setSubmitterEmail(null);
       setStep('station');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'PIN verification failed');
@@ -172,15 +248,17 @@ export default function PublicSubmit() {
           });
 
           if (!res.ok) {
-            const data = (await res.json()) as { error?: string };
-            throw new Error(data.error ?? 'Upload failed');
+            // MEDIUM-3: Never surface server error strings to users
+            setError('Upload failed. Please try again.');
+            continue;
           }
 
           const data = (await res.json()) as UploadedAttachment;
           newAttachments.push(data);
           newPreviews.push({ file, url: URL.createObjectURL(file) });
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Upload failed');
+        } catch {
+          // MEDIUM-3: Never surface server error strings to users
+          setError('Upload failed. Please try again.');
         }
       }
 
@@ -234,15 +312,17 @@ export default function PublicSubmit() {
       });
 
       if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        throw new Error(data.error ?? 'Submission failed');
+        // MEDIUM-3: Never surface server error strings to users
+        setError('Submission failed. Please try again.');
+        return;
       }
 
       const data = (await res.json()) as SubmitResult;
       setSubmitResult(data);
       setStep('success');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to submit inventory');
+    } catch {
+      // MEDIUM-3: Never surface server error strings to users
+      setError('Submission failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -284,7 +364,115 @@ export default function PublicSubmit() {
 
       {/* Main content */}
       <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* ── Step: PIN ──────────────────────────────────────── */}
+
+        {/* ── Step: Email Entry ──────────────────────────────── */}
+        {step === 'email' && (
+          <div className="flex flex-col items-center justify-center min-h-[60vh]">
+            <div className="w-full max-w-sm glass rounded-2xl p-8 flex flex-col items-center">
+              <div className="h-16 w-16 rounded-full bg-dcvfd/30 flex items-center justify-center mb-5">
+                <svg className="h-8 w-8 text-dcvfd-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold mb-1">Sign In</h2>
+              <p className="text-zinc-400 text-sm mb-6 text-center">
+                Enter your email to receive a sign-in link
+              </p>
+
+              <input
+                ref={emailInputRef}
+                type="email"
+                inputMode="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleEmailSubmit(); }}
+                placeholder="you@dcvfd.org"
+                className="w-full bg-surface-overlay border-2 border-border-default rounded-xl py-3 px-4 text-white outline-none focus:border-dcvfd-accent focus:ring-1 focus:ring-dcvfd-accent/30 transition-all placeholder:text-zinc-600 mb-4"
+                aria-label="Email address"
+                autoComplete="email"
+              />
+
+              {error && (
+                <div className="w-full rounded-xl bg-red-950/50 border border-red-900/50 px-4 py-2.5 text-sm text-red-300 mb-4">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleEmailSubmit}
+                disabled={!emailInput.trim() || loading}
+                className="w-full rounded-xl bg-dcvfd py-3.5 font-semibold text-white shadow-lg shadow-dcvfd/20 hover:bg-dcvfd-light active:bg-dcvfd-dark active:scale-[0.98] disabled:bg-zinc-800 disabled:text-zinc-500 disabled:shadow-none min-h-[48px] transition-all"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Sending...
+                  </span>
+                ) : (
+                  'Send me a sign-in link'
+                )}
+              </button>
+
+              {/* Divider */}
+              <div className="w-full flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-border-subtle" />
+                <span className="text-xs text-zinc-600">or</span>
+                <div className="flex-1 h-px bg-border-subtle" />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => { setError(null); setStep('pin'); }}
+                className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                Use station PIN instead
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step: Email Sent Confirmation ─────────────────── */}
+        {step === 'email-sent' && (
+          <div className="flex flex-col items-center justify-center min-h-[60vh]">
+            <div className="w-full max-w-sm glass rounded-2xl p-8 flex flex-col items-center">
+              <div className="h-16 w-16 rounded-full bg-dcvfd-accent/20 flex items-center justify-center mb-5">
+                <svg className="h-8 w-8 text-dcvfd-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold mb-1">Check your email</h2>
+              <p className="text-zinc-400 text-sm text-center mb-2">
+                We sent a sign-in link to
+              </p>
+              <p className="font-medium text-white text-sm mb-5 break-all text-center">
+                {emailInput}
+              </p>
+              <p className="text-zinc-500 text-xs text-center mb-6">
+                The link expires in 30 minutes. Click it to access the inventory form.
+              </p>
+              <button
+                type="button"
+                onClick={() => setStep('email')}
+                className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                Use a different email
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step: Verifying token ──────────────────────────── */}
+        {step === 'verifying' && (
+          <div className="flex flex-col items-center justify-center min-h-[60vh]">
+            <div className="flex items-center gap-3 text-zinc-400">
+              <div className="h-5 w-5 border-2 border-dcvfd-accent border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm">Verifying sign-in link...</span>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step: PIN (legacy fallback) ────────────────────── */}
         {step === 'pin' && (
           <div className="flex flex-col items-center justify-center min-h-[60vh]">
             <div className="w-full max-w-sm glass rounded-2xl p-8 flex flex-col items-center">
@@ -333,6 +521,15 @@ export default function PublicSubmit() {
                   'Continue'
                 )}
               </button>
+
+              {/* Back to email */}
+              <button
+                type="button"
+                onClick={() => { setError(null); setStep('email'); }}
+                className="mt-4 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                Back to email sign-in
+              </button>
             </div>
           </div>
         )}
@@ -343,6 +540,9 @@ export default function PublicSubmit() {
             <div className="text-center mb-6">
               <h2 className="text-xl font-bold mb-1">Select Your Station</h2>
               <p className="text-zinc-500 text-sm">Choose the station you are counting for</p>
+              {submitterEmail && (
+                <p className="text-xs text-dcvfd-accent mt-1">Signed in as {submitterEmail}</p>
+              )}
             </div>
 
             <div className="w-full max-w-md grid grid-cols-2 gap-4 mb-8">
@@ -365,20 +565,22 @@ export default function PublicSubmit() {
               ))}
             </div>
 
-            {/* Submitter name — optional */}
-            <div className="w-full max-w-md">
-              <label htmlFor="submitter-name" className="block text-sm text-zinc-400 mb-1.5">
-                Who is submitting? (optional)
-              </label>
-              <input
-                id="submitter-name"
-                type="text"
-                value={submitterName}
-                onChange={(e) => setSubmitterName(e.target.value)}
-                placeholder="Your name"
-                className="w-full bg-surface-overlay border-2 border-border-default rounded-xl py-3 px-4 text-white outline-none focus:border-dcvfd-accent focus:ring-1 focus:ring-dcvfd-accent/30 transition-all placeholder:text-zinc-600"
-              />
-            </div>
+            {/* Submitter name — optional (skip if we have email from magic link) */}
+            {!submitterEmail && (
+              <div className="w-full max-w-md">
+                <label htmlFor="submitter-name" className="block text-sm text-zinc-400 mb-1.5">
+                  Who is submitting? (optional)
+                </label>
+                <input
+                  id="submitter-name"
+                  type="text"
+                  value={submitterName}
+                  onChange={(e) => setSubmitterName(e.target.value)}
+                  placeholder="Your name"
+                  className="w-full bg-surface-overlay border-2 border-border-default rounded-xl py-3 px-4 text-white outline-none focus:border-dcvfd-accent focus:ring-1 focus:ring-dcvfd-accent/30 transition-all placeholder:text-zinc-600"
+                />
+              </div>
+            )}
 
             {loading && (
               <div className="mt-8 flex items-center gap-2 text-zinc-400 text-sm">
@@ -494,7 +696,13 @@ export default function PublicSubmit() {
                 <span className="text-zinc-400">Station</span>
                 <span className="font-medium">{station.name}</span>
               </div>
-              {submitterName && (
+              {submitterEmail && (
+                <div className="flex justify-between text-sm mt-2">
+                  <span className="text-zinc-400">Signed in as</span>
+                  <span className="font-medium text-dcvfd-accent truncate ml-2">{submitterEmail}</span>
+                </div>
+              )}
+              {!submitterEmail && submitterName && (
                 <div className="flex justify-between text-sm mt-2">
                   <span className="text-zinc-400">Submitted by</span>
                   <span className="font-medium">{submitterName}</span>
@@ -623,6 +831,12 @@ export default function PublicSubmit() {
               </div>
               <h2 className="text-xl font-bold mb-1">Inventory Submitted</h2>
               <p className="text-zinc-400 text-sm mb-6">{station?.name}</p>
+
+              {submitterEmail && (
+                <p className="text-xs text-zinc-500 mb-4 text-center">
+                  A confirmation has been sent to {submitterEmail}
+                </p>
+              )}
 
               <div className="w-full space-y-2 text-sm">
                 <div className="flex justify-between rounded-lg bg-surface-overlay px-4 py-2.5">

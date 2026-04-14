@@ -61,6 +61,11 @@ export interface OrderFulfilledEmailData {
   pickList: Array<{ name: string; quantity: number }>;
 }
 
+export interface MagicLinkEmailData {
+  email: string;
+  magicUrl: string;
+}
+
 // ── Shared HTML partials ─────────────────────────────────────────────
 
 /** Shared <head> block with dark-mode and responsive media queries */
@@ -526,6 +531,59 @@ ${htmlFoot()}`;
   }
   lines.push('');
   lines.push(`View Orders: ${BRAND.baseUrl}/orders`);
+  lines.push('');
+  lines.push(BRAND.footerText);
+  lines.push(BRAND.baseUrl);
+
+  return { html, text: lines.join('\n'), subject };
+}
+
+// ── Email 3: Magic Link Sign-In ──────────────────────────────────────
+
+export function renderMagicLinkEmail(data: MagicLinkEmailData): {
+  html: string;
+  text: string;
+  subject: string;
+} {
+  const subject = 'Sign in to EMS Inventory';
+
+  const html = `${htmlHead(subject)}
+${emailHeader('EMS Inventory')}
+        <!-- Intro -->
+        <tr>
+          <td style="padding:24px 32px 8px;">
+            <p class="body-text" style="margin:0 0 8px;font-size:15px;color:#374151;font-family:${FONT};">
+              Click the button below to access the EMS Inventory form.
+            </p>
+            <p class="body-text" style="margin:0;font-size:13px;color:#6b7280;font-family:${FONT};">
+              This link was requested for <strong>${escHtml(data.email)}</strong>.
+              If you did not request this, you can safely ignore this email.
+            </p>
+          </td>
+        </tr>
+${ctaButton('Sign in to EMS Inventory', data.magicUrl)}
+        <!-- Expiry notice -->
+        <tr>
+          <td style="padding:0 32px 24px;text-align:center;">
+            <p class="body-text" style="margin:0;font-size:12px;color:#9ca3af;font-family:${FONT};">
+              This link expires in 30 minutes and can only be used once per session.
+            </p>
+          </td>
+        </tr>
+${htmlFoot()}`;
+
+  const lines: string[] = [];
+  lines.push('SIGN IN TO EMS INVENTORY');
+  lines.push('='.repeat(50));
+  lines.push('');
+  lines.push('Click the link below to access the EMS Inventory form:');
+  lines.push('');
+  lines.push(data.magicUrl);
+  lines.push('');
+  lines.push('This link expires in 30 minutes.');
+  lines.push('');
+  lines.push(`Requested for: ${data.email}`);
+  lines.push('If you did not request this, you can safely ignore this email.');
   lines.push('');
   lines.push(BRAND.footerText);
   lines.push(BRAND.baseUrl);

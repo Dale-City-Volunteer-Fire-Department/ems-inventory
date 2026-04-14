@@ -7,6 +7,15 @@ import type { InventoryEmailData, OrderFulfilledEmailData } from './templates';
 
 const EQUIPMENT_EMAIL = 'equipment@dcvfd.org';
 
+// ── Station officer distros ──────────────────────────────────────────
+
+const STATION_OFFICER_EMAILS: Record<number, string> = {
+  10: 'FS10Officers@dcvfd.org',
+  13: 'FS13Officers@dcvfd.org',
+  18: 'FS18Officers@dcvfd.org',
+  20: 'FS20Officers@dcvfd.org',
+};
+
 // ── Recipient resolution ─────────────────────────────────────────────
 
 /**
@@ -32,21 +41,38 @@ async function findSubmitterEmail(
 /**
  * Build the recipient list for a session.
  * Always includes equipment@dcvfd.org.
- * Also includes the submitter's email if they are an authenticated Entra SSO member.
+ * Always includes the station's officer group email (FS##Officers@dcvfd.org).
+ * Also includes:
+ *   - The submitter's Entra SSO email if they are an authenticated member (non-public)
+ *   - The magic link submitter's email if they authenticated via magic link (public)
  */
 async function buildInventoryRecipients(
   env: Env,
   submitterName: string | null,
   isPublic: boolean,
+  stationId: number,
+  submitterEmail?: string | null,
 ): Promise<string[]> {
   const recipients: string[] = [EQUIPMENT_EMAIL];
 
-  // Public submissions: only equipment email
-  if (isPublic) return recipients;
+  // Add station officer distro
+  const officerEmail = STATION_OFFICER_EMAILS[stationId];
+  if (officerEmail && !recipients.includes(officerEmail)) {
+    recipients.push(officerEmail);
+  }
 
-  const submitterEmail = await findSubmitterEmail(env, submitterName);
-  if (submitterEmail && !recipients.includes(submitterEmail)) {
-    recipients.push(submitterEmail);
+  if (isPublic) {
+    // For magic link authenticated public submissions, CC the submitter
+    if (submitterEmail && !recipients.includes(submitterEmail)) {
+      recipients.push(submitterEmail);
+    }
+    return recipients;
+  }
+
+  // Authenticated (Entra SSO) submission — look up submitter by name
+  const entraEmail = await findSubmitterEmail(env, submitterName);
+  if (entraEmail && !recipients.includes(entraEmail)) {
+    recipients.push(entraEmail);
   }
 
   return recipients;
@@ -65,7 +91,7 @@ export async function notifyInventorySubmitted(env: Env, sessionId: number): Pro
     // ── 1. Session + station ─────────────────────────────────────────
     const sessionRow = await env.DB.prepare(
       `SELECT s.id, s.station_id, s.submitted_by, s.submitted_at,
-              s.item_count, s.items_short, s.notes, s.is_public, s.submitter_name,
+              s.item_count, s.items_short, s.notes, s.is_public, s.submitter_name, s.submitter_email,
               st.name AS station_name, st.code AS station_code
        FROM inventory_sessions s
        JOIN stations st ON st.id = s.station_id
@@ -82,6 +108,7 @@ export async function notifyInventorySubmitted(env: Env, sessionId: number): Pro
         notes: string | null;
         is_public: number;
         submitter_name: string | null;
+        submitter_email: string | null;
         station_name: string;
         station_code: string;
       }>();
@@ -191,7 +218,13 @@ export async function notifyInventorySubmitted(env: Env, sessionId: number): Pro
     const { html, text, subject } = renderInventoryEmail(data);
 
     // ── 8. Build recipients + send ───────────────────────────────────
-    const to = await buildInventoryRecipients(env, sessionRow.submitted_by, isPublic);
+    const to = await buildInventoryRecipients(
+      env,
+      sessionRow.submitted_by,
+      isPublic,
+      sessionRow.station_id,
+      sessionRow.submitter_email,
+    );
     const result = await sendEmail(env, { to, subject, html, text });
 
     if (!result.success) {
@@ -214,7 +247,7 @@ export async function notifyOrderFulfilled(env: Env, orderId: number): Promise<v
   try {
     // ── 1. Order + session + station ────────────────────────────────
     const orderRow = await env.DB.prepare(
-      `SELECT o.id, o.session_id, o.items_short, o.created_at, o.filled_at, o.filled_by,
+      `SELECT o.id, o.session_id, o.station_id, o.items_short, o.created_at, o.filled_at, o.filled_by,
               s.submitted_by, s.is_public, s.submitter_name,
               st.name AS station_name, st.code AS station_code
        FROM orders o
@@ -226,6 +259,7 @@ export async function notifyOrderFulfilled(env: Env, orderId: number): Promise<v
       .first<{
         id: number;
         session_id: number;
+        station_id: number;
         items_short: number;
         created_at: string;
         filled_at: string | null;
@@ -272,6 +306,12 @@ export async function notifyOrderFulfilled(env: Env, orderId: number): Promise<v
 
     // ── 4. Recipients ────────────────────────────────────────────────
     const to: string[] = [EQUIPMENT_EMAIL];
+
+    // Add station officer distro
+    const officerEmail = STATION_OFFICER_EMAILS[orderRow.station_id];
+    if (officerEmail && !to.includes(officerEmail)) {
+      to.push(officerEmail);
+    }
 
     if (!isPublic) {
       const submitterEmail = await findSubmitterEmail(env, orderRow.submitted_by);
